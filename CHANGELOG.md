@@ -13,7 +13,7 @@ and this project adheres to
 
 ### Added
 
--  Initial release
+-  Initial release: Currently only works on MT1300 "Beryl" routers. Not tested outside of my own router.
   
 ### Changed
 
