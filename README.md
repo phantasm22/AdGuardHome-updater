@@ -22,5 +22,4 @@ Shell script to update AdGuardHome on GL.iNet based routers.
 
 
 ## Versions
---------
 v0.1 - alpha version, only works on MT1300 "Beryl" routers. Not tested outside of my own router.
