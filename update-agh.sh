@@ -229,6 +229,7 @@ else
    /bin/rm -f "$AGHTMP""$FILE"*
    /bin/rm -fr "$AGHTMP"AdGuardHome
    exit 1
+fi
 
 # Cleanup
 echo -e "${GREEN}   Cleaning up AdGuardHome temp files${NOCOLOR}"
