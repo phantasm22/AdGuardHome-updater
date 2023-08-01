@@ -19,3 +19,10 @@ Shell script to update AdGuardHome on GL.iNet based routers.
 
 ## Supported Routers
 1. GL.iNet - "Beryl" MT1300
+
+## Installation
+1. SSH to your router
+2. Change to the directory you'd like to download AGH updater
+3. `wget https://raw.githubusercontent.com/phantasm22/AdGuardHome-updater/main/update-agh.sh`
+4. `chmod +x ./update-agh.sh`
+5. `./update-agh.sh`
