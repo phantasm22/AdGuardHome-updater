@@ -1,8 +1,8 @@
 #!/bin/sh
 
-#AdGuardHome Updater for GL.INET routers created by vlord
-#Last updated 5-July-2023
-#v0.1
+#AdGuardHome Updater for GL.INET routers created by phantasm22
+#Last updated 31-July-2023
+#v0.2
 
 #Some useful colors that we can use             
 NOCOLOR='\033[0m'   #Default Color
@@ -53,6 +53,13 @@ AGH_BETA="beta/"
 AGHRELURL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases"   
 
 #Precheck
+if [ $(readlink /usr/bin/wget) == "/usr/libexec/wget-ssl" ]; then                                                            
+  echo -e "${GREEN}   Found suitable wget symlinked to: ${BLUE}/usr/libexec/wget-ssl${NOCOLOR}"                                                  
+else                                                                                                                            
+   echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
+   exit 1                                                                                                                                          
+fi  
+
 if test -f "$PROG"; then
    echo -e "${GREEN}   Found AdGuardHome binary: ${BLUE}$PROG${NOCOLOR}"
    if test -f "$CONFIG"; then
