@@ -29,10 +29,10 @@ echo -e "${LTCYAN}AdGuardHome Upgrader for GL.INET Routers\n${NOCOLOR}"
 AGHTMP="/overlay/tmp/" 
 
 #This sets the AGH program and config file locations
-PROG=$(find / -name AdGuardHome -xdev)
-CONFIG=$(find / -name adguardhome.yaml -xdev)
-KAGH=$(find / -name K*adguardhome -xdev)
-SAGH=$(find / -name S*adguardhome -xdev)
+PROG=$(find / -xdev -name AdGuardHome)
+CONFIG=$(find / -xdev -name adguardhome.yaml)
+KAGH=$(find / -xdev -name K*adguardhome)
+SAGH=$(find / -xdev -name S*adguardhome)
 
 #Router Model
 MODEL=$(cat /proc/gl-hw-info/model)
