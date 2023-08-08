@@ -204,7 +204,6 @@ tar -xzf $AGHTMP$FILE -C $AGHTMP
 
 # Disable AGH
 printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
-#/etc/rc.d/K89adguardhome stop
 if $SAGH stop; then
    printf "${BLUE}Success!${NOCOLOR}\n"
 else
@@ -228,7 +227,6 @@ fi
 
 # Restart AGH
 printf "${GREEN}   Restarting AdGuardHome...${NOCOLOR}"
-#/etc/rc.d/S21adguardhome start
 if $SAGH start; then
    printf "${BLUE}Success!${NOCOLOR}\n"
 else
@@ -245,7 +243,7 @@ rm -fr "$AGHTMP"AdGuardHome
 
 # Check new version
 printf "${GREEN}   Checking installed version of AdGuardHome...${NOCOLOR}"
-INSTALLED=$($PROG --version | cut -d "version " -f3)
+INSTALLED=$($PROG --version | awk '{ print $4 " " }' | cut -d 'v' -f2 | xargs)
 if [ "$INSTALLED" == "$LATEST_REL" ]; then
    printf "${BLUE}Pass!${NOCOLOR}\n"                                                                                                                                                                                                                               
 else                                                                                                                                              
