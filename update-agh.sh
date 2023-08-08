@@ -31,7 +31,7 @@ AGHTMP="/overlay/tmp/"
 #This sets the AGH program and config file locations
 PROG=$(find / -type f -name "AdGuardHome" 2>/dev/null | head -n 1)
 CONFIG=$(find / -type f -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
-SAGH=$(find / -type f -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
+SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
 
 #Router architecture type
 MODEL=$(uname -m)
