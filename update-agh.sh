@@ -1,8 +1,8 @@
 #!/bin/sh
 
-#AdGuardHome Updater for GL.INET routers created by phantasm22
-#Last updated 31-July-2023
-#v0.2
+#AdGuardHome Updater for GL.INET and Asus routers created by phantasm22
+#Last updated 7-Aug-2023
+#v0.3
 
 #Some useful colors that we can use             
 NOCOLOR='\033[0m'   #Default Color
@@ -23,29 +23,41 @@ LTCYAN='\e[1;36m'
 LTGRAY='\e[0;37m'
 WHITE='\e[1;37m'                                    
                                                                        
-echo -e "${LTCYAN}AdGuardHome Upgrader for GL.INET Routers\n${NOCOLOR}"
+echo -e "${LTCYAN}AdGuardHome Upgrader for GL.INET and Asus Routers\n${NOCOLOR}"
 
 #Set your preferred temp directory here. If not, updater will use /tmp if you have 50M free space             
 AGHTMP="/overlay/tmp/" 
 
 #This sets the AGH program and config file locations
-PROG=$(find / -xdev -name AdGuardHome)
-CONFIG=$(find / -xdev -name adguardhome.yaml)
-KAGH=$(find / -xdev -name K*adguardhome)
-SAGH=$(find / -xdev -name S*adguardhome)
+PROG=$(find / -name "AdGuardHome" 2>/dev/null | head -n 1)
+CONFIG=$(find / -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
+SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
 
 #Router Model
-MODEL=$(cat /proc/gl-hw-info/model)
+if test -f "/proc/gl-hw-info/model"; then
+   MODEL=$(cat /proc/gl-hw-info/model)
+else
+   if test -f "/proc/nvram/boardid"; then
+      MODEL=$(cat /proc/nvram/boardid | cut -d "_" -f 1)
+   fi
+fi
 
 #Source versions: https://github.com/AdguardTeam/AdGuardHome/wiki/Platforms
 BASEURL="https://static.adguard.com/adguardhome/"
 if [ "$MODEL" == "mt1300" ]; then
    echo -e "${GREEN}   Found supported model: ${BLUE}$MODEL${NOCOLOR}" 
    FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"
+   WGETCHECK=TRUE
 else
-   echo -e "${RED}   ERROR: Cannot determine model type suitable for download. Exiting...${NOCOLOR}"
-   exit 1
+   if [ "$MODEL" == "GTAX6000" ]; then
+      echo -e "${GREEN}   Found supported model: ${BLUE}$MODEL${NOCOLOR}" 
+      FILE="AdGuardHome_linux_arm64.tar.gz"
+   else
+      echo -e "${RED}   ERROR: Cannot determine model type suitable for download. Exiting...${NOCOLOR}"
+      exit 1
+   fi
 fi
+
 AGH_RELEASE="release/"
 AGH_BETA="beta/"
 
@@ -53,11 +65,13 @@ AGH_BETA="beta/"
 AGHRELURL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases"   
 
 #Precheck
-if [ $(readlink /usr/bin/wget) == "/usr/libexec/wget-ssl" ]; then                                                            
-  echo -e "${GREEN}   Found suitable wget symlinked to: ${BLUE}/usr/libexec/wget-ssl${NOCOLOR}"                                                  
-else                                                                                                                            
-   echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
-   exit 1                                                                                                                                          
+if [ "$WGETCHECK" == "TRUE" ]; then
+   if [ $(readlink /usr/bin/wget) == "/usr/libexec/wget-ssl" ]; then                                                            
+      echo -e "${GREEN}   Found suitable wget symlinked to: ${BLUE}/usr/libexec/wget-ssl${NOCOLOR}"                                                  
+   else                                                                                                                            
+      echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
+      exit 1                                                                                                                                          
+   fi
 fi  
 
 if test -f "$PROG"; then
@@ -91,16 +105,10 @@ else
    exit 1
 fi
 
-if test -f "$KAGH"; then
-   echo -e "${GREEN}   Found AdGuardHome kill script in ${BLUE}$KAGH${NOCOLOR}"
-   if test -f "$SAGH"; then
-      echo -e "${GREEN}   Found AdGuardHome startup script in ${BLUE}$SAGH$\n${NOCOLOR}"
-   else 
-      echo -e "${RED}   Can't find existing AdGuardHome startup script. AGH already installed? Exiting...${NOCOLOR}"
-      exit 1
-   fi
-else
-   echo -e "${RED}   Can't find existing AdGuardHome kill script. AGH already installed? Exiting...${NOCOLOR}"
+if test -f "$SAGH"; then
+   echo -e "${GREEN}   Found AdGuardHome startup script in ${BLUE}$SAGH\n${NOCOLOR}"
+else 
+   echo -e "${RED}   Can't find existing AdGuardHome startup script. AGH already installed? Exiting...${NOCOLOR}"
    exit 1
 fi
 
@@ -108,9 +116,9 @@ fi
 
 
 #Check to see if there are any updates
-LATEST_REL=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": false,/q;p' | tail -4 | grep "tag_name" | cut -d ': ' -f2 | cut -d '"' -f2 | cut -d 'v' -f2)
-LATEST_BETA=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": true,/q;p' | tail -4 | grep "tag_name" | cut -d ': ' -f2 | cut -d '"' -f2 | cut -d 'v' -f2)
-INSTALLED=$($PROG --version | cut -d "version " -f3)
+LATEST_REL=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": false,/q;p' | tail -4 | grep "tag_name" | cut -d ':' -f2 | cut -d '"' -f2 | cut -d 'v' -f2 | xargs)
+LATEST_BETA=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": true,/q;p' | tail -4 | grep "tag_name" | cut -d ':' -f2 | cut -d '"' -f2 | cut -d 'v' -f2 | xargs)
+INSTALLED=$($PROG --version | awk '{ print $4 " " }' | cut -d 'v' -f2 | xargs)
 
 if [ "$LATEST_REL" == "" ]; then
    echo -e "${RED}   Error: Can't get release version info from website. Exiting...${NOCOLOR}"
@@ -205,7 +213,7 @@ fi
 # Disable AGH
 printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
 #/etc/rc.d/K89adguardhome stop
-if $KAGH stop; then
+if $SAGH stop; then
    printf "${BLUE}Success!${NOCOLOR}\n"
 else
    printf "${RED}Fail!${NOCOLOR}\n"
