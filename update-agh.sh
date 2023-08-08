@@ -33,29 +33,22 @@ PROG=$(find / -type f -name "AdGuardHome" 2>/dev/null | head -n 1)
 CONFIG=$(find / -type f -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
 SAGH=$(find / -type f -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
 
-#Router Model
-if test -f "/proc/gl-hw-info/model"; then
-   MODEL=$(cat /proc/gl-hw-info/model)
-else
-   if test -f "/proc/nvram/boardid"; then
-      MODEL=$(cat /proc/nvram/boardid | cut -d "_" -f 1)
-   fi
-fi
-
+#Router architecture type
+MODEL=$(uname -m)
+                                                                         
 #Source versions: https://github.com/AdguardTeam/AdGuardHome/wiki/Platforms
-BASEURL="https://static.adguard.com/adguardhome/"
-if [ "$MODEL" == "mt1300" ]; then
-   echo -e "${GREEN}   Found supported model: ${BLUE}$MODEL${NOCOLOR}" 
-   FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"
-   WGETCHECK=TRUE
+BASEURL="https://static.adguard.com/adguardhome/"                          
+if [ "$MODEL" == "mips" ]; then
+   echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
+   FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"                                                         
 else
-   if [ "$MODEL" == "GTAX6000" ]; then
-      echo -e "${GREEN}   Found supported model: ${BLUE}$MODEL${NOCOLOR}" 
+   if [ "$MODEL" == "aarch64" ]; then
+      echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
       FILE="AdGuardHome_linux_arm64.tar.gz"
    else
-      echo -e "${RED}   ERROR: Cannot determine model type suitable for download. Exiting...${NOCOLOR}"
+      echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
       exit 1
-   fi
+    fi
 fi
 
 AGH_RELEASE="release/"
@@ -65,14 +58,13 @@ AGH_BETA="beta/"
 AGHRELURL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases"   
 
 #Precheck
-if [ "$WGETCHECK" == "TRUE" ]; then
-   if [ $(readlink /usr/bin/wget) == "/usr/libexec/wget-ssl" ]; then                                                            
-      echo -e "${GREEN}   Found suitable wget symlinked to: ${BLUE}/usr/libexec/wget-ssl${NOCOLOR}"                                                  
-   else                                                                                                                            
-      echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
-      exit 1                                                                                                                                          
-   fi
-fi  
+#Precheck                                                                                             
+if [ -z $(which wget | xargs readlink) ] || [ $(which wget | xargs readlink) == "/usr/libexec/wget-ssl" ]; then
+   echo -e "${GREEN}   Looking for suitable version of wget: ${BLUE}PASS!${NOCOLOR}"
+else
+   echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
+   exit 1
+fi
 
 if test -f "$PROG"; then
    echo -e "${GREEN}   Found AdGuardHome binary: ${BLUE}$PROG${NOCOLOR}"
