@@ -8,6 +8,22 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.3] - 2023-08-07
+
+### Added
+
+-  Added support for Asus GT-AX6000 Router
+  
+### Changed
+
+### Deprecated
+No longer checks for a kill script. Will use the startup script to kill processes.
+
+### Fixed
+Multiple minor items
+
+
+
 ## [v0.2] - 2023-07-31
 
 ### Added
