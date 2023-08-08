@@ -200,7 +200,7 @@ fi
 
 # Get AGH
 echo -e "${GREEN}   Downloading version ${BLUE}$VERINFO${GREEN} of AdGuardHome${NOCOLOR}"
-/usr/bin/wget --backups=1 -q -P $AGHTMP $AGHVER
+wget --backups=1 -q -P $AGHTMP $AGHVER
 
 # Extracting new version
 echo -e "${GREEN}   Extracting version ${BLUE}$VERINFO${GREEN} of AdGuardHome${NOCOLOR}"
@@ -208,7 +208,7 @@ if [ ! -f "$AGHTMP$FILE" ]; then
    echo -e "{RED}   $AGHTMP$FILE does not exist. Exiting...${NOCOLOR}"
    exit 1
 fi
-/bin/tar -xzf $AGHTMP$FILE -C $AGHTMP
+tar -xzf $AGHTMP$FILE -C $AGHTMP
 
 # Disable AGH
 printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
@@ -218,8 +218,8 @@ if $SAGH stop; then
 else
    printf "${RED}Fail!${NOCOLOR}\n"
    echo -e "${RED}   Can't disable AdGuardHome. Exiting...${NOCOLOR}"
-   /bin/rm -f "$AGHTMP""$FILE"*
-   /bin/rm -fr "$AGHTMP"AdGuardHome
+   rm -f "$AGHTMP""$FILE"*
+   rm -fr "$AGHTMP"AdGuardHome
    exit 1
 fi
 
@@ -229,8 +229,8 @@ if [ -f "$AGHTMP"AdGuardHome/AdGuardHome ]; then
    cp "$AGHTMP"AdGuardHome/AdGuardHome $PROG
 else 
    echo -e "{RED}   Can't find "$AGHTMP"AdGuardHome/AdGuardHome. Exiting...${NOCOLOR}"
-   /bin/rm -f "$AGHTMP""$FILE"*
-   /bin/rm -fr "$AGHTMP"AdGuardHome
+   rm -f "$AGHTMP""$FILE"*
+   rm -fr "$AGHTMP"AdGuardHome
    exit 1
 fi
 
@@ -241,15 +241,15 @@ if $SAGH start; then
    printf "${BLUE}Success!${NOCOLOR}\n"
 else
    echo -e "${RED}   Can't restart AdGuardHome. Exiting....${NOCOLOR}"
-   /bin/rm -f "$AGHTMP""$FILE"*
-   /bin/rm -fr "$AGHTMP"AdGuardHome
+   rm -f "$AGHTMP""$FILE"*
+   rm -fr "$AGHTMP"AdGuardHome
    exit 1
 fi
 
 # Cleanup
 echo -e "${GREEN}   Cleaning up AdGuardHome temp files${NOCOLOR}"
-/bin/rm -f "$AGHTMP""$FILE"*
-/bin/rm -fr "$AGHTMP"AdGuardHome
+rm -f "$AGHTMP""$FILE"*
+rm -fr "$AGHTMP"AdGuardHome
 
 # Check new version
 printf "${GREEN}   Checking installed version of AdGuardHome...${NOCOLOR}"
