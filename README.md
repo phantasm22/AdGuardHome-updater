@@ -1,5 +1,5 @@
-# Gl.iNet-AdGuardHome-Updater
-Shell script to update AdGuardHome on GL.iNet based routers.
+# Gl.iNet-Asus-AdGuardHome-Updater
+Shell script to update AdGuardHome on GL.iNet and Asus based routers.
 
 ## Features
 1. Checks for dependencies:
@@ -19,6 +19,7 @@ Shell script to update AdGuardHome on GL.iNet based routers.
 
 ## Supported Routers
 1. GL.iNet - "Beryl" MT1300
+2. Asus GT-AX6000
 
 ## Installation
 1. SSH to your router
