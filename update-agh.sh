@@ -29,9 +29,9 @@ echo -e "${LTCYAN}AdGuardHome Upgrader for GL.INET and Asus Routers\n${NOCOLOR}"
 AGHTMP="/overlay/tmp/" 
 
 #This sets the AGH program and config file locations
-PROG=$(find / -name "AdGuardHome" 2>/dev/null | head -n 1)
-CONFIG=$(find / -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
-SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
+PROG=$(find / -type f -name "AdGuardHome" 2>/dev/null | head -n 1)
+CONFIG=$(find / -type f -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
+SAGH=$(find / -type f -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
 
 #Router Model
 if test -f "/proc/gl-hw-info/model"; then
