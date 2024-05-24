@@ -8,6 +8,19 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.4] - 2024-05-24
+
+### Added
+-  Added Y/N questions for backing up config file and AGH binary and checking for backup space. If your /usr/bin is tight on space, then you should skip backup of your adguardhome binary
+  
+### Changed
+
+### Deprecated
+
+### Fixed
+
+
+
 ## [v0.3] - 2023-08-07
 
 ### Added
