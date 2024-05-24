@@ -177,18 +177,62 @@ fi
 
 #read -p "Press Enter to continue" </dev/tty
 
-# Create backup
-echo -e "${GREEN}   Creating backups of AGH binary and config files${NOCOLOR}"                                  
-cp $PROG $PROG.old
-if [ ! -f "$PROG.old" ]; then
-   echo -e "{RED}   $PROG.old does not exist. Exiting...${NOCOLOR}"
-   exit 1
-fi     
-cp $CONFIG $CONFIG.backup
-if [ ! -f "$CONFIG.backup" ]; then
-   echo -e "{RED}   $CONFIG.backup does not exist. Exiting...${NOCOLOR}"
-   exit 1
-fi
+# Create backup                                                                                                                                                                                         
+while true; do                                                                                                                                                                                          
+   read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome binary? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno1                       
+      case $yesno1 in                                                                                                                                                                                   
+         [Yy] ) while true; do                                                                                                                                                                          
+                   read -p "$(echo -e "${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno2    
+                      case $yesno2 in                                                                                                                                                                   
+                         [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome binary and config file...${NOCOLOR}"                                                                                
+                                cp $PROG $PROG.old                                                                                                                                                      
+                                if [ ! -f "$PROG.old" ]; then                                                                                                                                           
+                                   printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                               
+                                exit 1                                                                                                                                                                  
+                                fi                                                                                                                                                                      
+                                cp $CONFIG $CONFIG.backup                                                                                                                                               
+                                if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                      
+                                   printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                          
+                                   exit 1                                                                                                                                                               
+                                fi                                                                                                                                                                      
+                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                    
+                                break;;                                                                                                                                                                 
+                         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary${NOCOLOR}"                                                                                                 
+                                printf "\n${GREEN}   Creating backup of AdGuardHome binary...${NOCOLOR}"                                                                                                
+                                cp $PROG $PROG.old                                                                                                                                                      
+                                if [ ! -f "$PROG.old" ]; then                                                                                                                                           
+                                   printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                               
+                                exit 1                                                                                                                                                                  
+                                fi                                                                                                                                                                      
+                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                    
+                                break;;                                                                                                                                                                 
+                         *    ) echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                         
+                       esac                                                                                                                                                                             
+                   done                                                                                                                                                                                 
+                break;;                                                                                                                                                                                 
+         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary${NOCOLOR}"                                                                                                                 
+                while true; do                                                                                                                                                                          
+                   read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno3  
+                      case $yesno3 in                                                                                                                                                                   
+                         [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome config file...${NOCOLOR}"                                                                                           
+                                cp $CONFIG $CONFIG.backup                                                                                                                                               
+                                if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                      
+                                   printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                          
+                                   exit 1                                                                                                                                                               
+                                fi                                                                                                                                                                      
+                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                    
+                                break;;                                                                                                                                                                 
+                         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary and config file${NOCOLOR}"                                                                                 
+                                break;;                                                                                                                                                                 
+                         *    ) echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                         
+                      esac                                                                                                                                                                              
+                   done                                                                                                                                                                                 
+              break;;                                                                                                                                                                                   
+         * )    echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                                         
+      esac                                                                                                                                                                                              
+done    
+
+#read -p "Press Enter to continue" </dev/tty
 
 # Get AGH
 echo -e "${GREEN}   Downloading version ${BLUE}$VERINFO${GREEN} of AdGuardHome${NOCOLOR}"
@@ -205,9 +249,9 @@ tar -xzf $AGHTMP$FILE -C $AGHTMP
 # Disable AGH
 printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
 if $SAGH stop; then
-   printf "${BLUE}Success!${NOCOLOR}\n"
+   printf "${BLUE}SUCCESS!${NOCOLOR}\n"
 else
-   printf "${RED}Fail!${NOCOLOR}\n"
+   printf "${RED}FAIL!${NOCOLOR}\n"
    echo -e "${RED}   Can't disable AdGuardHome. Exiting...${NOCOLOR}"
    rm -f "$AGHTMP""$FILE"*
    rm -fr "$AGHTMP"AdGuardHome
@@ -245,12 +289,12 @@ rm -fr "$AGHTMP"AdGuardHome
 printf "${GREEN}   Checking installed version of AdGuardHome...${NOCOLOR}"
 INSTALLED=$($PROG --version | awk '{ print $4 " " }' | cut -d 'v' -f2 | xargs)
 if [ "$INSTALLED" == "$LATEST_REL" ]; then
-   printf "${BLUE}Pass!${NOCOLOR}\n"                                                                                                                                                                                                                               
+   printf "${BLUE}PASS!${NOCOLOR}\n"                                                                                                                                                                                                                               
 else                                                                                                                                              
    if [ "$INSTALLED" == "$LATEST_BETA" ]; then                                                                                                    
-      printf "${BLUE}Pass!${NOCOLOR}\n"
+      printf "${BLUE}PASS!${NOCOLOR}\n"
       else
-         printf "${RED}Fail!${NOCOLOR}\n"
+         printf "${RED}FAIL!${NOCOLOR}\n"
          echo -e "${RED}   FATAL ERROR: Installed version is ${BLUE}$INSTALLED${RED}, expect ${BLUE}$VERINFO${RED}. Exiting...${NOCOLOR}"
          exit 1
    fi
