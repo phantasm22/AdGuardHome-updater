@@ -8,6 +8,18 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.5] - 2024-05-26
+
+### Added
+-  Added support for GLiNet routers that enable AdGuardHome from the WebUI e.g. Beryl AX
+  
+### Changed
+
+### Deprecated
+
+### Fixed
+
+
 ## [v0.4] - 2024-05-24
 
 ### Added
