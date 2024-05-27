@@ -1,8 +1,8 @@
 #!/bin/sh
 
 #AdGuardHome Updater for GL.INET and Asus routers created by phantasm22
-#Last updated 24-May-2024
-#v0.4
+#Last updated 26-May-2024
+#v0.5
 
 #Some useful colors that we can use             
 NOCOLOR='\033[0m'   #Default Color
@@ -31,6 +31,9 @@ AGHTMP="/overlay/tmp/"
 #This sets the AGH program and config file locations
 PROG=$(find / -type f -name "AdGuardHome" 2>/dev/null | head -n 1)
 CONFIG=$(find / -type f -name "?d?uard?ome.yaml" 2>/dev/null | head -n 1)
+if ! test -f "$CONFIG"; then
+   CONFIG=$(find /etc/AdGuardHome/ -type f -name "config.yaml" 2>/dev/null | head -n 1)
+fi 
 SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | head -n 1)
 
 #Router architecture type
@@ -69,7 +72,7 @@ fi
 if test -f "$PROG"; then
    echo -e "${GREEN}   Found AdGuardHome binary: ${BLUE}$PROG${NOCOLOR}"
    if test -f "$CONFIG"; then
-      echo -e "${GREEN}   Found adguardhome.yaml configuration file: ${BLUE}$CONFIG${NOCOLOR}" 
+      echo -e "${GREEN}   Found AdGuardHome yaml configuration file: ${BLUE}$CONFIG${NOCOLOR}" 
       if test -d "$AGHTMP"; then
          echo -e "${GREEN}   Found temp directory: ${BLUE}$AGHTMP${NOCOLOR}"
       else
@@ -277,7 +280,7 @@ tar -xzf $AGHTMP$FILE -C $AGHTMP
 
 # Disable AGH
 printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
-if $SAGH stop; then
+if $SAGH stop 2>/dev/null; then
    printf "${BLUE}SUCCESS!${NOCOLOR}\n"
 else
    printf "${RED}FAIL!${NOCOLOR}\n"
@@ -300,7 +303,7 @@ fi
 
 # Restart AGH
 printf "${GREEN}   Restarting AdGuardHome...${NOCOLOR}"
-if $SAGH start; then
+if $SAGH start 2>/dev/null; then
    printf "${BLUE}Success!${NOCOLOR}\n"
 else
    echo -e "${RED}   Can't restart AdGuardHome. Exiting....${NOCOLOR}"
