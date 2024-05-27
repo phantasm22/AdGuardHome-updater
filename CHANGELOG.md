@@ -14,6 +14,7 @@ and this project adheres to
 -  Added support for GLiNet routers that enable AdGuardHome from the WebUI e.g. Beryl AX
   
 ### Changed
+- Starting and stopping of AdGuardHome service will silence output from the startup script
 
 ### Deprecated
 
