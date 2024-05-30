@@ -192,12 +192,12 @@ if [ $AGHFREE -ge "37" ]; then
                       read -p "$(echo -e "${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno2 
                       case $yesno2 in                                                                                                                                                                
                          [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome binary and config file...${NOCOLOR}"                                                                             
-                                cp $PROG $PROG.old                                                                                                                                                   
+                                cp -f $PROG $PROG.old                                                                                                                                                   
                                 if [ ! -f "$PROG.old" ]; then                                                                                                                                        
                                    printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                            
                                 exit 1                                                                                                                                                               
                                 fi                                                                                                                                                                   
-                                cp $CONFIG $CONFIG.backup                                                                                                                                            
+                                cp -f $CONFIG $CONFIG.backup                                                                                                                                            
                                 if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                   
                                    printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                       
                                 exit 1                                                                                                                                                            
@@ -206,7 +206,7 @@ if [ $AGHFREE -ge "37" ]; then
                                 break;;                                                                                                                                                              
                          [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary${NOCOLOR}"                                                                                              
                                 printf "\n${GREEN}   Creating backup of AdGuardHome binary...${NOCOLOR}"                                                                                             
-                                cp $PROG $PROG.old                                                                                                                                                   
+                                cp -f $PROG $PROG.old                                                                                                                                                   
                                 if [ ! -f "$PROG.old" ]; then                                                                                                                                        
                                    printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                            
                                 exit 1                                                                                                                                                               
@@ -222,7 +222,7 @@ if [ $AGHFREE -ge "37" ]; then
                       read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno3
                       case $yesno3 in                                                                                                                                                                 
                          [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome config file...${NOCOLOR}"                                                                                         
-                                cp $CONFIG $CONFIG.backup                                                                                                                                             
+                                cp -f $CONFIG $CONFIG.backup                                                                                                                                             
                                 if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                    
                                    printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                        
                                    exit 1                                                                                                                                                             
@@ -286,7 +286,7 @@ fi
 # copy new AGH
 echo -e "${GREEN}   Copying verion ${BLUE}$VERINFO${GREEN} into place${NOCOLOR}"
 if [ -f "$AGHTMP"AdGuardHome/AdGuardHome ]; then
-   cp "$AGHTMP"AdGuardHome/AdGuardHome $PROG
+   cp -f "$AGHTMP"AdGuardHome/AdGuardHome $PROG
 else 
    echo -e "{RED}   Can't find "$AGHTMP"AdGuardHome/AdGuardHome. Exiting...${NOCOLOR}"
    rm -f "$AGHTMP""$FILE"*
