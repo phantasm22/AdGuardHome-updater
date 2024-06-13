@@ -8,6 +8,21 @@ and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+
+## [v0.6] - 2024-06-12
+
+### Added
+-
+
+### Changed
+- Script will now ignore /overlay directories. This is due to the writing directly to /overlay will break it. See [this thread](https://forum.gl-inet.com/t/gl-mt1300-beryl-bugs/42543/28?u=phantasm22) for more details
+
+### Deprecated
+
+### Fixed
+
+
+
 ## [v0.5] - 2024-05-26
 
 ### Added
@@ -19,6 +34,7 @@ and this project adheres to
 ### Deprecated
 
 ### Fixed
+
 
 
 ## [v0.4] - 2024-05-24
