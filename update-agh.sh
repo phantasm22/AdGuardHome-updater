@@ -1,8 +1,8 @@
 #!/bin/sh
 
 #AdGuardHome Updater for GL.INET and Asus routers created by phantasm22
-#Last updated 26-May-2024
-#v0.5
+#Last updated 12-June-2024
+#v0.6
 
 #Some useful colors that we can use             
 NOCOLOR='\033[0m'   #Default Color
