@@ -48,9 +48,14 @@ else
    if [ "$MODEL" == "aarch64" ]; then
       echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
       FILE="AdGuardHome_linux_arm64.tar.gz"
-   else
-      echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
-      exit 1
+   else 
+      if [ "$MODEL" == "armv7l" ]; then
+         echo -e "${GREEN} Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
+         FILE="AdGuardHome_linux_armv7.tar.gz"
+       else
+         echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
+         exit 1
+       fi
     fi
 fi
 
