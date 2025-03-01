@@ -40,24 +40,26 @@ SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | grep -v /overlay | head -n 1)
 MODEL=$(uname -m)
                                                                          
 #Source versions: https://github.com/AdguardTeam/AdGuardHome/wiki/Platforms
-BASEURL="https://static.adguard.com/adguardhome/"                          
-if [ "$MODEL" == "mips" ]; then
-   echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-   FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"                                                         
-else
-   if [ "$MODEL" == "aarch64" ]; then
-      echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-      FILE="AdGuardHome_linux_arm64.tar.gz"
-   else 
-      if [ "$MODEL" == "armv7l" ]; then
-         echo -e "${GREEN} Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-         FILE="AdGuardHome_linux_armv7.tar.gz"
-       else
-         echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
-         exit 1
-       fi
-    fi
-fi
+BASEURL="https://static.adguard.com/adguardhome/"
+
+case "$MODEL" in
+  mips)
+    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
+    FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"
+    ;;
+  aarch64)
+    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
+    FILE="AdGuardHome_linux_arm64.tar.gz"
+    ;;
+  armv7l)
+    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
+    FILE="AdGuardHome_linux_armv7.tar.gz"
+    ;;
+  *)
+    echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
+    exit 1
+    ;;
+esac
 
 AGH_RELEASE="release/"
 AGH_BETA="beta/"
