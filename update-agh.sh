@@ -1,338 +1,286 @@
 #!/bin/sh
 
 #AdGuardHome Updater for GL.INET and Asus routers created by phantasm22
-#Last updated 12-June-2024
-#v0.6
+#Last updated 1-May-2025
+#v1.0
 
-#Some useful colors that we can use             
-NOCOLOR='\033[0m'   #Default Color
-BLACK='\e[0;30m'
-GRAY='\e[1;30m'
-RED='\e[0;31m'
-LTRED='\e[1;31m'
-GREEN='\e[0;32m'
-LTGREEN='\e[1;32m'
-BROWN='\e[0;33m'
-YELLOW='\e[1;33m'
-BLUE='\e[0;34m'
-LTBLUE='\e[1;34m'
-PURPLE='\e[0;35m'
-LTPURPLE='\e[1;35m'
-CYAN='\e[0;36m'
-LTCYAN='\e[1;36m'
-LTGRAY='\e[0;37m'
-WHITE='\e[1;37m'                                    
-                                                                       
-echo -e "${LTCYAN}AdGuardHome Upgrader for GL.INET and Asus Routers\n${NOCOLOR}"
+#==================== COLORS ====================
+NOCOLOR='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+#================================================
 
-#Set your preferred temp directory here. If not, updater will use /tmp if you have 50M free space             
-AGHTMP="/overlay/tmp/" 
+ARCH="linux_arm64"
+SCRIPT_VERSION="1.0.0"
+AGH_BIN=""
+VERSION=""
+LATEST_VERSION=""
+TRAIN=""
+TMP_DIR="/tmp/agh-update"
 
-#This sets the AGH program and config file locations
-PROG=$(find / -type f -name "AdGuardHome" 2>/dev/null | grep -v /overlay | head -n 1)
-CONFIG=$(find / -type f -name "?d?uard?ome.yaml" 2>/dev/null | grep -v /overlay | head -n 1)
-if ! test -f "$CONFIG"; then
-   CONFIG=$(find /etc/AdGuardHome/ -type f -name "config.yaml" 2>/dev/null | grep -v /overlay | head -n 1)
-fi 
-SAGH=$(find / -name "S*?d?uard?ome" 2>/dev/null | grep -v /overlay | head -n 1)
+#==================== FUNCTIONS ====================
 
-#Router architecture type
-MODEL=$(uname -m)
-                                                                         
-#Source versions: https://github.com/AdguardTeam/AdGuardHome/wiki/Platforms
-BASEURL="https://static.adguard.com/adguardhome/"
+find_running_binary() {
+    pid=$(pidof AdGuardHome 2>/dev/null)
+    if [ -n "$pid" ]; then
+        exe=$(readlink -f "/proc/$pid/exe")
+        if [ -x "$exe" ]; then
+            AGH_BIN="$exe"
+            return
+        fi
+    fi
 
-case "$MODEL" in
-  mips)
-    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-    FILE="AdGuardHome_linux_mipsle_softfloat.tar.gz"
-    ;;
-  aarch64)
-    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-    FILE="AdGuardHome_linux_arm64.tar.gz"
-    ;;
-  armv7l)
-    echo -e "${GREEN}   Found supported arch type: ${BLUE}$MODEL${NOCOLOR}"
-    FILE="AdGuardHome_linux_armv7.tar.gz"
-    ;;
-  *)
-    echo -e "${RED}   ERROR: Cannot determine suitable arch type for download. Exiting...${NOCOLOR}"
-    exit 1
-    ;;
-esac
+    # Try startup script fallback
+    for candidate in /etc/init.d/AdGuardHome /etc/rc.local /etc/rc.d/* /etc/config/*; do
+        [ -f "$candidate" ] || continue
+        bin=$(grep -Eo '/[^ ]*/AdGuardHome' "$candidate" | head -n1)
+        if [ -n "$bin" ] && [ -x "$bin" ]; then
+            AGH_BIN="$bin"
+            return
+        fi
+    done
 
-AGH_RELEASE="release/"
-AGH_BETA="beta/"
+    echo -e "${RED}❌ AdGuardHome binary not found.${NOCOLOR}"
+}
 
-#Location to check for any updates
-AGHRELURL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases"   
+get_current_version() {
+    if [ -x "$AGH_BIN" ]; then
+        VERSION="$($AGH_BIN --version | awk '{print $4}')"
+    else
+        VERSION="v0.000.00"
+    fi
+}
 
-#Precheck
-#Precheck                                                                                             
-if [ -z $(which wget | xargs readlink) ] || [ $(which wget | xargs readlink) == "/usr/libexec/wget-ssl" ]; then
-   echo -e "${GREEN}   Looking for suitable version of wget: ${BLUE}PASS!${NOCOLOR}"
-else
-   echo -e "${RED}   Can't find suitable wget. Please ${BLUE}opkg install wget-ssl ${RED}and check your symlinks. Exiting...${NOCOLOR}"
-   exit 1
-fi
+get_release_train() {
+    case "$VERSION" in
+        v0.107.*) TRAIN="stable" ;;
+        v0.108.*) TRAIN="beta" ;;
+        *) TRAIN="unknown" ;;
+    esac
+}
 
-if test -f "$PROG"; then
-   echo -e "${GREEN}   Found AdGuardHome binary: ${BLUE}$PROG${NOCOLOR}"
-   if test -f "$CONFIG"; then
-      echo -e "${GREEN}   Found AdGuardHome yaml configuration file: ${BLUE}$CONFIG${NOCOLOR}" 
-      if test -d "$AGHTMP"; then
-         echo -e "${GREEN}   Found temp directory: ${BLUE}$AGHTMP${NOCOLOR}"
-      else
-         if test -d "/tmp"; then
-            AGHTMP="/tmp/"
-            echo -e "${GREEN}   Found temp directory: ${BLUE}$AGHTMP${NOCOLOR}"
-         else
-         echo -e "${RED}   Can't find suitable temp working directory. Check script parms. Exiting...${NOCOLOR}"
-         exit 1
-         fi
-      fi
-      TMPFREE=$(df -Pm $AGHTMP | sed 1d | grep -v used | awk '{ print $4 "\t" }' | awk -F\, '{gsub(/[\t]+$/, ""); print $1}')
-      if [ $TMPFREE -ge "50" ]; then
-         echo -e "${GREEN}   Temp directory ${BLUE}$AGHTMP${GREEN} has ${BLUE}${TMPFREE}M${GREEN} free...${BLUE}PASS!${NOCOLOR}"
-      else
-         echo -e "${GREEN} Temp directory ${BLUE}$AGHTMP${GREEN} has ${BLUE}${TMPFREE}M${GREEN} free...${RED}FAIL!${NOCOLOR}"
-         exit 1
-      fi
-   else 
-      echo -e "${RED}   Can't find existing AdGuardHome config file. Maybe dups? Exiting...${NOCOLOR}"
-      exit 1
-   fi
-else
-   echo -e "${RED}   Can't find existing AdGuardHome binary. Maybe dups? Exiting...${NOCOLOR}"
-   exit 1
-fi
+get_latest_version() {
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases \
+    	| grep '"tag_name":' \
+    	| grep -o 'v0\.10[78]\.[0-9]*\(-b\.[0-9]*\)\?' \
+    	| { [ "$TRAIN" = "beta" ] && grep '^v0\.108' || grep -E '^v0\.107(\.[0-9]+)?$'; } \
+    	| head -n 1)
+    if [ -z "$LATEST_VERSION" ]; then
+        echo -e "${RED}❌ Failed to fetch latest version from GitHub.${NOCOLOR}"
+    fi
+}
 
-if test -f "$SAGH"; then
-   echo -e "${GREEN}   Found AdGuardHome startup script in ${BLUE}$SAGH\n${NOCOLOR}"
-else 
-   echo -e "${RED}   Can't find existing AdGuardHome startup script. AGH already installed? Exiting...${NOCOLOR}"
-   exit 1
-fi
+build_download_url() {
+    echo -e "https://github.com/AdguardTeam/AdGuardHome/releases/download/${LATEST_VERSION}/AdGuardHome_${ARCH}.tar.gz"
+}
 
-#read -p "Press Enter to continue" </dev/tty
+show_info() {
+    echo -e "\n${BLUE}                               AdGuardHome Updater v$SCRIPT_VERSION${NOCOLOR}"
+    echo -e "Current Version: ${GREEN}${VERSION}${NOCOLOR}"
+    echo -e "Release Train:  ${YELLOW}${TRAIN}${NOCOLOR}"
+    echo -e "Latest Version: ${BLUE}${LATEST_VERSION}${NOCOLOR}"
+    if [ "$VERSION" = "$LATEST_VERSION" ]; then
+        echo -e "Update Available: ${GREEN}No${NOCOLOR}"
+    else
+        echo -e "Update Available: ${YELLOW}Yes${NOCOLOR}"
+    fi
+}
 
+find_startup_script() {
+    STARTUP_SCRIPT=""
+    for file in /etc/init.d/* /etc/rc.local /jffs/scripts/* /opt/etc/init.d/*; do
+        [ -f "$file" ] || continue
+        grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return
+    done
+}
 
-#Check to see if there are any updates
-LATEST_REL=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": false,/q;p' | tail -4 | grep "tag_name" | cut -d ':' -f2 | cut -d '"' -f2 | cut -d 'v' -f2 | xargs)
-LATEST_BETA=$(wget -q -O - $AGHRELURL | sed -n '/"prerelease": true,/q;p' | tail -4 | grep "tag_name" | cut -d ':' -f2 | cut -d '"' -f2 | cut -d 'v' -f2 | xargs)
-INSTALLED=$($PROG --version | awk '{ print $4 " " }' | cut -d 'v' -f2 | xargs)
+stop_adguardhome() {
+    if [ -n "$STARTUP_SCRIPT" ]; then                                                                                                                                                                                         
+        "$STARTUP_SCRIPT" stop 2>/dev/null                                                                                                                                                                                
+    else                                                                                                                                                                                                                      
+    	pid=$(pidof AdGuardHome)
+    	[ -n "$pid" ] && kill "$pid" && sleep 2
+    fi                                                                                                                                                                                                                        
+}
 
-if [ "$LATEST_REL" == "" ]; then
-   echo -e "${RED}   Error: Can't get release version info from website. Exiting...${NOCOLOR}"
-   exit 1
-else
-   if [ "$LATEST_BETA" == "" ]; then 
-      echo -e "${RED}   Error: Can't get beta version info from website. Exiting...${NOCOLOR}"
-      exit 1
-   fi
-fi  
+start_adguardhome() {
+    if [ -n "$STARTUP_SCRIPT" ]; then
+        "$STARTUP_SCRIPT" start 2>/dev/null
+    else
+        "$AGH_BIN" -s start 2>/dev/null
+    fi
+}
 
-#INSTALLED=0.108.0-b.39
-#INSTALLED=0.107.29
+restart_adguardhome() {                                                                                                                                                                                                                          
+    if [ -n "$STARTUP_SCRIPT" ]; then                                                                                                                                                                                                          
+        "$STARTUP_SCRIPT" restart 2>/dev/null                                                                                                                                                                                                    
+    else                                                                                                                                                                                                                                       
+        "$AGH_BIN" -s restart 2>/dev/null                                                                                                                                                                                                      
+    fi                                                                                                                                                                                                                                         
+}
 
-if [ "$INSTALLED" == "$LATEST_REL" ]; then
-   echo -e "${GREEN}   Your installed version of ${BLUE}$INSTALLED${GREEN} is the same as the latest release version of ${BLUE}$LATEST_REL${NOCOLOR}"
-   while true; do
-      read -p "$(echo -e "${GREEN}   Would you like to switch to the latest beta version ${BLUE}${LATEST_BETA}? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno
-      case $yesno in
-         [Yy] ) echo -e "\n${GREEN}   Installing beta version ${BLUE}$LATEST_BETA${GREEN} of AdGuardHome${NOCOLOR}"              
-                VERINFO=$LATEST_BETA
-                AGHVER=$BASEURL$AGH_BETA$FILE
-                break;;
-         [Nn] ) echo -e "\n${YELLOW}   Nothing to do. Exiting...${NOCOLOR}"
-                exit 0;;
-         *    ) echo -e "${RED}   Invalid response${NOCOLOR}\n";;
-      esac
-   done 
-else
-   if [ "$INSTALLED" == "$LATEST_BETA" ]; then
-      echo -e "${GREEN}   Your installed version of ${BLUE}$INSTALLED${GREEN} is the same as the latest beta version of ${BLUE}$LATEST_BETA${NOCOLOR}"
-   while true; do
-      read -p "$(echo -e "${GREEN}   Would you like to switch to the latest release version ${BLUE}${LATEST_REL}? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno   
-      case $yesno in                                                                                                                
-         [Yy] ) echo -e "\n${GREEN}   Installing release version ${BLUE}$LATEST_REL${GREEN} of AdGuardHome${NOCOLOR}"                 
-                VERINFO=$LATEST_REL
-                AGHVER=$BASEURL$AGH_RELEASE$FILE
-                break;;                                                                                                             
-         [Nn] ) echo -e "\n${YELLOW}   Nothing to do. Exiting...${NOCOLOR}"                                                         
-                exit 0;;                                                                                                            
-         *    ) echo -e "${RED}   Invalid response${NOCOLOR}\n";;                                                                   
-      esac
-   done
-   else 
-      echo -e "${GREEN}   Your installed version is ${BLUE}$INSTALLED${GREEN}\n   The latest beta version is ${BLUE}$LATEST_BETA${GREEN}\n   The latest release version is ${BLUE}$LATEST_REL${GREEN}\n"
-      while true; do
-          read -p "$(echo -e "${GREEN}   Would you like to upgrade to the latest [${LTGREEN}b${GREEN}]eta, [${LTGREEN}r${GREEN}]elease, or [${LTGREEN}q${GREEN}]uit? ")" brq
-      case $brq in
-         [bB] ) echo -e "\n${GREEN}   Installing beta version ${BLUE}$LATEST_BETA${GREEN} of AdGuardHome${NOCOLOR}" 
-                VERINFO=$LATEST_BETA
-                AGHVER=$BASEURL$AGH_BETA$FILE
-                break;;
-         [rR] ) echo -e "\n${GREEN}   Installing release version ${BLUE}$LATEST_REL${GREEN} of AdGuardHome${NOCOLOR}"
-                VERINFO=$LATEST_REL
-                AGHVER=$BASEURL$AGH_RELEASE$FILE
-                break;;
-         [qQ] ) echo -e "${YELLOW}   Exiting...${NOCOLOR}"
-                exit 0;;
-         *    ) echo -e "${RED}   Invalid response${NOCOLOR}\n";;
-      esac
-      done
-   fi
-fi
+download_update() {
+    echo ""
 
-#read -p "Press Enter to continue" </dev/tty
-                                                                                                                                                                                        
-# Create backup after checking for available space                                                                                                                                                      
-echo -e "${GREEN}   Checking available space for backups${NOCOLOR}"                                                                                                                                     
-AGHFREE=$(df -Pm $(dirname $PROG) | sed 1d | grep -v used | awk '{ print $4 "\t" }' | awk -F\, '{gsub(/[\t]+$/, ""); print $1}')                                                                        
-if [ $AGHFREE -ge "37" ]; then                                                                                                                                                                          
-   echo -e "${GREEN}   Binary directory ${BLUE}$PROG${GREEN} has ${BLUE}${AGHFREE}M${GREEN} free...${BLUE}PASS!${NOCOLOR}"                                                                              
-   while true; do                                                                                                                                                                                       
-      read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome binary? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno1                    
-         case $yesno1 in                                                                                                                                                                                
-            [Yy] ) while true; do                                                                                                                                                                       
-                      read -p "$(echo -e "${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno2 
-                      case $yesno2 in                                                                                                                                                                
-                         [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome binary and config file...${NOCOLOR}"                                                                             
-                                cp -f $PROG $PROG.old                                                                                                                                                   
-                                if [ ! -f "$PROG.old" ]; then                                                                                                                                        
-                                   printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                            
-                                exit 1                                                                                                                                                               
-                                fi                                                                                                                                                                   
-                                cp -f $CONFIG $CONFIG.backup                                                                                                                                            
-                                if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                   
-                                   printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                       
-                                exit 1                                                                                                                                                            
-                                fi                                                                                                                                                                   
-                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                 
-                                break;;                                                                                                                                                              
-                         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary${NOCOLOR}"                                                                                              
-                                printf "\n${GREEN}   Creating backup of AdGuardHome binary...${NOCOLOR}"                                                                                             
-                                cp -f $PROG $PROG.old                                                                                                                                                   
-                                if [ ! -f "$PROG.old" ]; then                                                                                                                                        
-                                   printf "${RED}FAILURE! $PROG.old does not exist. Exiting...${NOCOLOR}"                                                                                            
-                                exit 1                                                                                                                                                               
-                                fi                                                                                                                                                                   
-                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                 
-                                break;;                                                                                                                                                              
-                         *    ) echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                      
-                      esac                                                                                                                                                                          
-                   done                                                                                                                                                                              
-                   break;;                                                                                                                                                                              
-            [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary${NOCOLOR}"                                                                                                              
-                   while true; do                                                                                                                                                                       
-                      read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno3
-                      case $yesno3 in                                                                                                                                                                 
-                         [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome config file...${NOCOLOR}"                                                                                         
-                                cp -f $CONFIG $CONFIG.backup                                                                                                                                             
-                                if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                    
-                                   printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                        
-                                   exit 1                                                                                                                                                             
-                                fi                                                                                                                                                                    
-                                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                 
-                                break;;                                                                                                                                                               
-                         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary and config file${NOCOLOR}"                                                                               
-                                break;;                                                                                                                                                               
-                         *    ) echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                       
-                      esac                                                                                                                                                                            
-                   done                                                                                                                                                                               
-                   break;;                                                                                                                                                                                 
-            * )    echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                                       
-         esac                                                                                                                                                                                            
-   done                                                                                                                                                                                                  
-else           
-   echo -e "${GREEN}   Binary directory ${BLUE}$PROG${GREEN} has ${BLUE}${AGHFREE}M${GREEN} free...${RED}FAILED! Skipping binary backup${NOCOLOR}"                                                                   
-   while true; do                                                                                                                                                                                                    
-      read -p "$(echo -e "\n${GREEN}   Would you like to create a backup of your AdGuardHome config file? ${GREEN}[${LTGREEN}Y${GREEN}]es or [${LTGREEN}N${GREEN}]o: ${NOCOLOR}")" yesno4                            
-      case $yesno4 in                                                                                                                                                                                                
-         [Yy] ) printf "\n${GREEN}   Creating backup of AdGuardHome config file...${NOCOLOR}"                                                                                                                        
-                cp $CONFIG $CONFIG.backup                                                                                                                                                                            
-                if [ ! -f "$CONFIG.backup" ]; then                                                                                                                                                                   
-                   printf "${RED}FAILURE! $CONFIG.backup does not exist. Exiting...${NOCOLOR}"                                                                                                                       
-                   exit 1                                                                                                                                                                                            
-                fi                                                                                                                                                                                                   
-                printf "${BLUE}SUCCESS!${NOCOLOR}\n"                                                                                                                                                                 
-                break;;                                                                                                                                                                                              
-         [Nn] ) echo -e "\n${YELLOW}   Skipping backup of AdGuardHome binary and config file${NOCOLOR}"                                                                                                              
-                break;;                                                                                                                                                                                              
-         *    ) echo -e "${RED}   Invalid response${NOCOLOR}";;                                                                                                                                                      
-      esac                                                                                                                                                                                                           
-   done                                                                                                                                                                                                              
-fi   
-#read -p "Press Enter to continue" </dev/tty
+    CURRENT_VER="$($AGH_BIN --version 2>/dev/null | awk '{print $4}')"
+    if [ "$CURRENT_VER" = "$LATEST_VERSION" ]; then
+        echo -e "✅ AdGuardHome is already at the latest version ($CURRENT_VER)."
+        echo -n "🔁 Do you want to redownload and overwrite it anyway? [y/N]: "
+        read -r confirm
+        [ "$confirm" != "y" ] && echo "ℹ️  Skipping update." && return 0
+    fi
 
-# Get AGH
-echo -e "${GREEN}   Downloading version ${BLUE}$VERINFO${GREEN} of AdGuardHome${NOCOLOR}"
-wget --backups=1 -q -P $AGHTMP $AGHVER
+    TMP_DIR="/tmp/agh-update"
+    mkdir -p "$TMP_DIR"
+    cd "$TMP_DIR" || return 1
 
-# Extracting new version
-echo -e "${GREEN}   Extracting version ${BLUE}$VERINFO${GREEN} of AdGuardHome${NOCOLOR}"
-if [ ! -f "$AGHTMP$FILE" ]; then
-   echo -e "{RED}   $AGHTMP$FILE does not exist. Exiting...${NOCOLOR}"
-   exit 1
-fi
-tar -xzf $AGHTMP$FILE -C $AGHTMP
+    MESSAGES=""  # Accumulator for stacked status messages
 
-# Disable AGH
-printf "${GREEN}   Disabling running version of AdGuardHome...${NOCOLOR}"
-if $SAGH stop 2>/dev/null; then
-   printf "${BLUE}SUCCESS!${NOCOLOR}\n"
-else
-   printf "${RED}FAIL!${NOCOLOR}\n"
-   echo -e "${RED}   Can't disable AdGuardHome. Exiting...${NOCOLOR}"
-   rm -f "$AGHTMP""$FILE"*
-   rm -fr "$AGHTMP"AdGuardHome
-   exit 1
-fi
+    draw_screen() {
+        percent="$1"
+        bar_width=50
+        filled=$((percent * bar_width / 100))
+        empty=$((bar_width - filled))
+        bar="$(printf "%0.s=" $(seq 1 "$filled"))"
+        bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
 
-# copy new AGH
-echo -e "${GREEN}   Copying verion ${BLUE}$VERINFO${GREEN} into place${NOCOLOR}"
-if [ -f "$AGHTMP"AdGuardHome/AdGuardHome ]; then
-   cp -f "$AGHTMP"AdGuardHome/AdGuardHome $PROG
-else 
-   echo -e "{RED}   Can't find "$AGHTMP"AdGuardHome/AdGuardHome. Exiting...${NOCOLOR}"
-   rm -f "$AGHTMP""$FILE"*
-   rm -fr "$AGHTMP"AdGuardHome
-   exit 1
-fi
+        clear
+        printf "🔄 [%3d%%] [%-${bar_width}s]\n\n" "$percent" "$bar"
+        [ -n "$MESSAGES" ] && printf "%b\n" "$MESSAGES"
+    }
 
-# Restart AGH
-printf "${GREEN}   Restarting AdGuardHome...${NOCOLOR}"
-if $SAGH start 2>/dev/null; then
-   printf "${BLUE}Success!${NOCOLOR}\n"
-else
-   echo -e "${RED}   Can't restart AdGuardHome. Exiting....${NOCOLOR}"
-   rm -f "$AGHTMP""$FILE"*
-   rm -fr "$AGHTMP"AdGuardHome
-   exit 1
-fi
+    add_msg() {
+        MESSAGES="${MESSAGES}\n$1"
+    }
 
-# Cleanup
-echo -e "${GREEN}   Cleaning up AdGuardHome temp files${NOCOLOR}"
-rm -f "$AGHTMP""$FILE"*
-rm -fr "$AGHTMP"AdGuardHome
+    draw_screen 0
 
-# Check new version
-printf "${GREEN}   Checking installed version of AdGuardHome...${NOCOLOR}"
-INSTALLED=$($PROG --version | awk '{ print $4 " " }' | cut -d 'v' -f2 | xargs)
-if [ "$INSTALLED" == "$LATEST_REL" ]; then
-   printf "${BLUE}PASS!${NOCOLOR}\n"                                                                                                                                                                                                                               
-else                                                                                                                                              
-   if [ "$INSTALLED" == "$LATEST_BETA" ]; then                                                                                                    
-      printf "${BLUE}PASS!${NOCOLOR}\n"
-      else
-         printf "${RED}FAIL!${NOCOLOR}\n"
-         echo -e "${RED}   FATAL ERROR: Installed version is ${BLUE}$INSTALLED${RED}, expect ${BLUE}$VERINFO${RED}. Exiting...${NOCOLOR}"
-         exit 1
-   fi
-fi
+    add_msg "⬇️ Downloading AdGuardHome_${ARCH}.tar.gz..."
+    draw_screen 10
+    URL=$(build_download_url)
+    if ! curl -sSL -o "AdGuardHome_${ARCH}.tar.gz" "$URL"; then
+        add_msg "${RED}❌ Failed to download from $URL${NOCOLOR}"
+        draw_screen 10
+        cd /tmp && rm -rf "$TMP_DIR"
+        return 1
+    fi
 
+    add_msg "🔧 Extracting files..."
+    draw_screen 25
+    if ! tar -xzf "AdGuardHome_${ARCH}.tar.gz"; then
+        add_msg "${RED}❌ Extraction failed.${NOCOLOR}"
+        draw_screen 25
+        cd /tmp && rm -rf "$TMP_DIR"
+        return 1
+    fi
 
-# Done
-echo -e "${LTGREEN}   Update completed!${NOCOLOR}" 
-exit 0
+    add_msg "🛑 Stopping AdGuardHome service..."
+    draw_screen 50
+    find_startup_script
+    stop_adguardhome
+
+    add_msg "📁 Replacing binary..."
+    draw_screen 75
+    if [ -f "./AdGuardHome/AdGuardHome" ]; then
+        cp -f ./AdGuardHome/AdGuardHome "$AGH_BIN"
+        chmod +x "$AGH_BIN"
+    else
+        add_msg "${RED}❌ Extracted binary not found.${NOCOLOR}"
+        draw_screen 75
+        cd /tmp && rm -rf "$TMP_DIR"
+        return 1
+    fi
+
+    add_msg "✅ Restarting service..."
+    draw_screen 100
+    start_adguardhome
+
+    NEW_VER="$($AGH_BIN --version | awk '{print $4}')"
+    if [ "$NEW_VER" = "$LATEST_VERSION" ]; then
+        add_msg "✅ Update complete!"
+    else
+        add_msg "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
+    fi
+    draw_screen 100
+
+    cd /tmp && rm -rf "$TMP_DIR"
+    return 0
+}
+
+manage_service() {
+    find_startup_script
+    echo -e "\n🔧 Manage AdGuardHome:"
+    echo "  1) Start"
+    echo "  2) Stop"
+    echo "  3) Restart"
+    echo "  4) Cancel"
+    echo -n "Select an option: "
+    read opt
+    case "$opt" in
+        1) start_adguardhome ;;
+        2) stop_adguardhome ;;
+        3) restart_adguardhome ;;
+        *) echo "Cancelled." ;;
+    esac
+}
+
+change_release_train() {
+    echo -e "\n🔁 Switch to release train:"
+    echo -e "  1) stable"
+    echo -e "  2) beta"
+    echo -e "  3) cancel"
+    echo -e -n "Select an option: "
+    read opt
+    case "$opt" in
+        1) TRAIN="stable" ;;
+        2) TRAIN="beta" ;;
+        *) echo -e "Cancelled."; return ;;
+    esac
+    get_latest_version
+}
+
+#==================== MAIN ====================
+find_running_binary
+get_current_version
+get_release_train
+get_latest_version
+show_info
+
+while true; do
+    echo -e "\n🧭 Please choose an option:"
+    echo -e "  1) 🚀 Update AdGuardHome"
+    echo -e "  2) 🔁 Change Release Train"
+    echo -e "  3) 🕰️  Restore Previous Version"
+    echo -e "  4) 🔧 Manage AdGuardHome (Start/Stop/Restart)"
+    echo -e "  5) ❌ Exit"
+    echo -n -e "\n📍 Enter choice: "
+    read choice
+
+    case "$choice" in
+        1)
+            echo -ne "\n💾 Backup option? (both/binary/config/none): "
+            read backup_choice
+            echo "(Backup code here – currently not implemented)"
+            download_update
+            ;;
+        2)
+            change_release_train
+            show_info
+            ;;
+        3)
+            echo "Restore functionality not yet implemented."
+            ;;
+        4)
+            manage_service
+            ;;
+        5)
+            echo "Exiting..."
+            exit 0
+            ;;
+        *)
+            echo "Invalid choice."
+            ;;
+    esac
+done
