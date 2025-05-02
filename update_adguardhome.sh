@@ -180,6 +180,7 @@ find_startup_script() {
 }
 
 stop_adguardhome() {
+    find_startup_script
     local before_pid after_pid i
 
     before_pid=$(pidof AdGuardHome)
@@ -216,6 +217,7 @@ stop_adguardhome() {
 }
 
 start_adguardhome() {
+    find_startup_script
     echo -e ""
     echo -e "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
 
@@ -241,6 +243,7 @@ start_adguardhome() {
 }
 
 restart_adguardhome() {
+    find_startup_script
     echo -e ""
     echo -e "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
 
@@ -323,7 +326,6 @@ download_update() {
 
     add_msg "🛑 Stopping AdGuardHome service..."
     draw_screen 50
-    find_startup_script
     stop_adguardhome
 
     add_msg "📁 Replacing binary..."
@@ -355,7 +357,6 @@ download_update() {
 }
 
 manage_service() {
-    find_startup_script
     echo -e "\n🔧 Manage AdGuardHome:"
     echo "  1) Start"
     echo "  2) Stop"
@@ -442,8 +443,7 @@ restore_adguardhome() {
     read restore_choice
 
     case "$restore_choice" in
-        1)
-	    find_startup_script                                                                                                
+        1)                                                                                             
 	    stop_adguardhome 
             [ -f "$AGH_BAK" ] && cp -f "$AGH_BAK" "$AGH_BIN" && chmod +x "$AGH_BIN" \
                 && echo -e "${GREEN}✅ Binary restored.${NOCOLOR}" \
@@ -453,16 +453,14 @@ restore_adguardhome() {
                 || echo -e "${RED}❌ Config backup not found.${NOCOLOR}"
             start_adguardhome
 	    ;;
-        2)
-            find_startup_script                                                                                        
+        2)                                                                                        
             stop_adguardhome 
             [ -f "$AGH_BAK" ] && cp -f "$AGH_BAK" "$AGH_BIN" && chmod +x "$AGH_BIN" \
                 && echo -e "${GREEN}✅ Binary restored.${NOCOLOR}" \
                 || echo -e "${RED}❌ Binary backup not found.${NOCOLOR}"
 	    start_adguardhome
             ;;
-        3)
-            find_startup_script                                                                                        
+        3)                                                                                        
             stop_adguardhome 
             [ -f "$CONFIG_BAK" ] && cp -f "$CONFIG_BAK" "$CONFIG_FILE" \
                 && echo -e "${GREEN}✅ Config restored.${NOCOLOR}" \
