@@ -188,11 +188,11 @@ stop_adguardhome() {
     before_pid=$(pidof AdGuardHome)
 
     if [ -z "$before_pid" ]; then
-        echo "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
+        echo -e "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
         return 0
     fi
 
-    echo "${BLUE}🛑 Attempting to stop AdGuardHome (PID $before_pid)...${NOCOLOR}"
+    echo -e "${BLUE}🛑 Attempting to stop AdGuardHome (PID $before_pid)...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
         "$STARTUP_SCRIPT" stop 2>/dev/null
@@ -210,16 +210,16 @@ stop_adguardhome() {
     echo ""
 
     if [ -n "$after_pid" ]; then
-        echo "${RED}❌ Failed to stop AdGuardHome (PID $after_pid still running).${NOCOLOR}" >&2
+        echo -e "${RED}❌ Failed to stop AdGuardHome (PID $after_pid still running).${NOCOLOR}" >&2
         return 1
     fi
 
-    echo "${GREEN}✅ AdGuardHome stopped successfully.${NOCOLOR}"
+    echo -e "${GREEN}✅ AdGuardHome stopped successfully.${NOCOLOR}"
     return 0
 }
 
 start_adguardhome() {
-    echo "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
+    echo -e "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
         "$STARTUP_SCRIPT" start 2>/dev/null
@@ -232,18 +232,18 @@ start_adguardhome() {
         sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
-            echo "${GREEN}✅ AdGuardHome started successfully (PID $pid).${NOCOLOR}"
+            echo -e "${GREEN}✅ AdGuardHome started successfully (PID $pid).${NOCOLOR}"
             return 0
         fi
         printf "\r⏳ Waiting for AdGuardHome to start... %s " "$((6 - i))"
     done
     echo ""
-    echo "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
+    echo -e "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
     return 1
 }
 
 restart_adguardhome() {
-    echo "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
+    echo -e "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
         "$STARTUP_SCRIPT" restart 2>/dev/null
@@ -256,13 +256,13 @@ restart_adguardhome() {
         sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
-            echo "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
+            echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
             return 0
         fi
         printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$((6 - i))"
     done
     echo ""
-    echo "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
+    echo -e "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
     return 1
 }
 
