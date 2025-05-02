@@ -222,7 +222,7 @@ start_adguardhome() {
 
     pid=$(pidof AdGuardHome)
     if [ -n "$pid" ]; then
-        echo -e "${GREEN}⚠️ AdGuardHome already started (PID $pid).${NOCOLOR}"
+        echo -e "${GREEN}⚠️  AdGuardHome already started (PID $pid).${NOCOLOR}"
         return 1
     fi
     
@@ -423,7 +423,7 @@ backup_adguardhome() {
 	    sleep 2
             ;;
         *)
-            echo -e "${YELLOW}⚠️ Unknown backup option: $backup_choice${NOCOLOR}"
+            echo -e "${YELLOW}⚠️  Unknown backup option: $backup_choice${NOCOLOR}"
             ;;
     esac
 }
