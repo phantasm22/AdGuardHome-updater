@@ -174,6 +174,7 @@ find_startup_script() {
         [ -f "$file" ] || continue
         grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return 0
     done
+    echo -e ""
     echo -e "❌ No valid AdGuardHome startup script found." >&2
     return 1
 }
@@ -182,7 +183,7 @@ stop_adguardhome() {
     local before_pid after_pid i
 
     before_pid=$(pidof AdGuardHome)
-
+    echo -e ""
     if [ -z "$before_pid" ]; then
         echo -e "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
         return 0
@@ -215,6 +216,7 @@ stop_adguardhome() {
 }
 
 start_adguardhome() {
+    echo -e ""
     echo -e "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
@@ -239,6 +241,7 @@ start_adguardhome() {
 }
 
 restart_adguardhome() {
+    echo -e ""
     echo -e "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
