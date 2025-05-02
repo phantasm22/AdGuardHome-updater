@@ -82,8 +82,7 @@ All actions are verified and logged interactively.
 | `/tmp/agh-update/`        | Temporary download/extract path   |
 | `AdGuardHome`             | Installed binary                  |
 | `AdGuardHome.yaml` or `config.yaml`       | User configuration file           |
-| `data/`                   | Runtime data directory            |
-| `.bak/`                   | Optional backup folder            |
+| `.bak`                   | Optional backup files            |
 
 ---
 
