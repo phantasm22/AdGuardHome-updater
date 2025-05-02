@@ -113,7 +113,7 @@ find_running_binary() {
     fi
 
     # Try startup script fallback
-    for candidate in /etc/init.d/AdGuardHome /etc/rc.local /etc/rc.d/* /etc/config/*; do
+    for candidate in /etc/init.d/* /etc/rc.local /etc/rc.d/* /etc/config/* /opt/etc/init.d/*; do
         [ -f "$candidate" ] || continue
         bin=$(grep -Eo '/[^ ]*/AdGuardHome' "$candidate" | head -n1)
         if [ -n "$bin" ] && [ -x "$bin" ]; then
@@ -170,35 +170,100 @@ show_info() {
 
 find_startup_script() {
     STARTUP_SCRIPT=""
-    for file in /etc/init.d/* /etc/rc.local /jffs/scripts/* /opt/etc/init.d/*; do
+    for file in /etc/rc.d/* /etc/rc.local /jffs/scripts/* /opt/etc/init.d/*; do
         [ -f "$file" ] || continue
-        grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return
+        if grep -q 'AdGuardHome' "$file"; then
+            STARTUP_SCRIPT="$file"
+            return 0
+        fi
     done
+
+    echo "${RED}❌ No AdGuardHome startup script found.${NOCOLOR}" >&2
+    return 1
 }
 
 stop_adguardhome() {
-    if [ -n "$STARTUP_SCRIPT" ]; then                                                                                                                                                                                         
-        "$STARTUP_SCRIPT" stop 2>/dev/null                                                                                                                                                                                
-    else                                                                                                                                                                                                                      
-    	pid=$(pidof AdGuardHome)
-    	[ -n "$pid" ] && kill "$pid" && sleep 2
-    fi                                                                                                                                                                                                                        
+    local before_pid after_pid i
+
+    before_pid=$(pidof AdGuardHome)
+
+    if [ -z "$before_pid" ]; then
+        echo "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
+        return 0
+    fi
+
+    echo "${BLUE}🛑 Attempting to stop AdGuardHome (PID $before_pid)...${NOCOLOR}"
+
+    if [ -n "$STARTUP_SCRIPT" ]; then
+        "$STARTUP_SCRIPT" stop 2>/dev/null
+    else
+        kill "$before_pid" 2>/dev/null
+    fi
+
+    # Countdown and check
+    for i in 5 4 3 2 1; do
+        printf "\r⏳ Waiting... %s " "$i"
+        sleep 1
+        after_pid=$(pidof AdGuardHome)
+        [ -z "$after_pid" ] && break
+    done
+    echo ""
+
+    if [ -n "$after_pid" ]; then
+        echo "${RED}❌ Failed to stop AdGuardHome (PID $after_pid still running).${NOCOLOR}" >&2
+        return 1
+    fi
+
+    echo "${GREEN}✅ AdGuardHome stopped successfully.${NOCOLOR}"
+    return 0
 }
 
 start_adguardhome() {
+    echo "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
+
     if [ -n "$STARTUP_SCRIPT" ]; then
         "$STARTUP_SCRIPT" start 2>/dev/null
     else
         "$AGH_BIN" -s start 2>/dev/null
     fi
+
+    # Wait and check for startup
+    for i in 1 2 3 4 5; do
+        sleep 1
+        pid=$(pidof AdGuardHome)
+        if [ -n "$pid" ]; then
+            echo "${GREEN}✅ AdGuardHome started successfully (PID $pid).${NOCOLOR}"
+            return 0
+        fi
+        printf "\r⏳ Waiting for AdGuardHome to start... %s " "$((6 - i))"
+    done
+    echo ""
+    echo "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
+    return 1
 }
 
-restart_adguardhome() {                                                                                                                                                                                                                          
-    if [ -n "$STARTUP_SCRIPT" ]; then                                                                                                                                                                                                          
-        "$STARTUP_SCRIPT" restart 2>/dev/null                                                                                                                                                                                                    
-    else                                                                                                                                                                                                                                       
-        "$AGH_BIN" -s restart 2>/dev/null                                                                                                                                                                                                      
-    fi                                                                                                                                                                                                                                         
+restart_adguardhome() {
+    echo "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
+
+    if [ -n "$STARTUP_SCRIPT" ]; then
+        "$STARTUP_SCRIPT" restart 2>/dev/null
+    else
+        "$AGH_BIN" -s restart 2>/dev/null
+    fi
+
+    # Wait and check for startup
+    for i in 1 2 3 4 5; do
+        sleep 1
+        pid=$(pidof AdGuardHome)
+        if [ -n "$pid" ]; then
+            echo "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
+            return 0
+        fi
+        printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$((6 - i))"
+    done
+    echo ""
+    echo "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
+    return 1
 }
 
 download_update() {
@@ -238,7 +303,7 @@ download_update() {
 
     draw_screen 0
 
-    add_msg "⬇️ \x20Downloading AdGuardHome_${ARCH}.tar.gz..."
+    add_msg "⬇️  Downloading AdGuardHome_${ARCH}.tar.gz..."
     draw_screen 10
     URL=$(build_download_url)
     if ! curl -sSL -o "AdGuardHome_${ARCH}.tar.gz" "$URL"; then
@@ -422,13 +487,13 @@ get_latest_version
 show_info
 
 while true; do
-    echo -e "\n📦 \x20Choose an option: "
-    echo -e "  1) 🚀 \x20Update AdGuardHome"
-    echo -e "  2) 🔁 \x20Change Release Train"
-    echo -e "  3) 🕰️  \x20Restore Previous Version"
-    echo -e "  4) 🔧 \x20Manage AdGuardHome (Start/Stop/Restart)"
-    echo -e "  5) ❌ \x20Exit"
-    echo -n -e "\n📍 \x20Enter choice: "
+    echo -e "\n📦  Choose an option: "
+    echo -e "  1) 🚀  Update AdGuardHome"
+    echo -e "  2) 🔁  Change Release Train"
+    echo -e "  3) 🕰️   Restore Previous Version"
+    echo -e "  4) 🔧  Manage AdGuardHome (Start/Stop/Restart)"
+    echo -e "  5) ❌  Exit"
+    echo -n -e "\n📍  Enter choice: "
     read choice
 
     case "$choice" in
