@@ -1,8 +1,40 @@
 #!/bin/sh
-
-#AdGuardHome Updater for GL.INET and Asus routers created by phantasm22
-#Last updated 1-May-2025
-#v1.0
+###############################################################################
+# update_adguardhome.sh
+#
+# Description:
+#   Interactive shell script for managing AdGuardHome on embedded Linux systems
+#   (e.g., OpenWRT, GL.iNet). Provides functionality to:
+#     - Check for and apply AdGuardHome updates
+#     - Switch between stable and beta release trains
+#     - Backup and restore previous versions
+#     - Manage the AdGuardHome service (start/stop/restart)
+#
+# Features:
+#   - Menu-based interface with progress display
+#   - Intelligent architecture detection (no hardcoded arch)
+#   - Optional backup of config and binary before updates
+#   - Minimal external dependencies (compatible with /bin/sh)
+#
+# Requirements:
+#   - curl, tar, kill, ps, and standard POSIX tools
+#
+# Author: Phantasm22
+#
+# License: GNU General Public License v3.0
+#          This program is free software: you can redistribute it and/or modify
+#          it under the terms of the GNU General Public License as published by
+#          the Free Software Foundation, either version 3 of the License, or
+#          (at your option) any later version.
+#
+#          This program is distributed in the hope that it will be useful,
+#          but WITHOUT ANY WARRANTY; without even the implied warranty of
+#          MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#          GNU General Public License for more details.
+#
+#          You should have received a copy of the GNU General Public License
+#          along with this program. If not, see <https://www.gnu.org/licenses/>.
+###############################################################################
 
 #==================== COLORS ====================
 NOCOLOR='\033[0m'
@@ -10,9 +42,10 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+LTBLUE='\033[96m'
 #================================================
 
-ARCH="linux_arm64"
+ARCH=""
 SCRIPT_VERSION="1.0.0"
 AGH_BIN=""
 VERSION=""
@@ -22,10 +55,57 @@ TMP_DIR="/tmp/agh-update"
 
 #==================== FUNCTIONS ====================
 
+show_splash_screen() {                              
+    clear
+    echo -e                                               
+    echo -e "${LTBLUE}+------------------------------------------------------------------------------+"
+    echo -e "|    _       _  ____                     _ _   _                               |"       
+    echo -e "|   / \   __| |/ ___|_   _  __ _ _ __ __| | | | | ___  _ __ ___   ___          |"       
+    echo -e "|  / _ \ / _\` | |  _| | | |/ _\` | '__/ _\` | |_| |/ _ \| '_ \` _ \ / _ \         |"       
+    echo -e "| / ___ \ (_| | |_| | |_| | (_| | | | (_| |  _  | (_) | | | | | |  __/         |"       
+    echo -e "|/_/  _\_\__,_|\____|\__,_|\__,_|_|  \__,_|_| |_|\___/|_| |_| |_|\___|         |"       
+    echo -e "| | | | |_ __   __| | __ _| |_ ___ _ __                                        |"        
+    echo -e "| | | | | '_ \ / _\` |/ _\` | __/ _ \ '__|                                       |"        
+    echo -e "| | |_| | |_) | (_| | (_| | ||  __/ |                                          |"        
+    echo -e "|  \___/| .__/ \__,_|\__,_|\__\___|_|                                          |"        
+    echo -e "|       |_|                                   by Phantasm22                    |"          
+    echo -e "|                                             v.${SCRIPT_VERSION}                          |"           
+    echo -e "+------------------------------------------------------------------------------+${NOCOLOR}"
+}  
+
+detect_arch() {
+    uname_s=$(uname -s | sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/')
+    uname_m=$(uname -m)
+
+    case "$uname_s" in
+        linux)
+            case "$uname_m" in
+                x86_64) ARCH="linux_amd64" ;;
+                i*86)   ARCH="linux_386" ;;
+                armv7l | armv6l) ARCH="linux_armv7" ;;
+                aarch64 | arm64) ARCH="linux_arm64" ;;
+                mips*)  ARCH="linux_mips" ;;  # Adjust as needed for mipsel vs mips
+                *)      echo "❌ Unsupported architecture: $uname_m"; exit 1 ;;
+            esac
+            ;;
+        darwin)
+            case "$uname_m" in
+                x86_64) ARCH="darwin_amd64" ;;
+                arm64)  ARCH="darwin_arm64" ;;
+                *)      echo "❌ Unsupported architecture: $uname_m"; exit 1 ;;
+            esac
+            ;;
+        *)
+            echo "❌ Unsupported OS: $uname_s"
+            exit 1
+            ;;
+    esac
+}
+
 find_running_binary() {
     pid=$(pidof AdGuardHome 2>/dev/null)
     if [ -n "$pid" ]; then
-        exe=$(readlink -f "/proc/$pid/exe")
+        exe=$(readlink -f "/proc/$pid/exe" | awk '{print $1}')
         if [ -x "$exe" ]; then
             AGH_BIN="$exe"
             return
@@ -77,7 +157,7 @@ build_download_url() {
 }
 
 show_info() {
-    echo -e "\n${BLUE}                               AdGuardHome Updater v$SCRIPT_VERSION${NOCOLOR}"
+    show_splash_screen
     echo -e "Current Version: ${GREEN}${VERSION}${NOCOLOR}"
     echo -e "Release Train:  ${YELLOW}${TRAIN}${NOCOLOR}"
     echo -e "Latest Version: ${BLUE}${LATEST_VERSION}${NOCOLOR}"
@@ -144,9 +224,10 @@ download_update() {
         filled=$((percent * bar_width / 100))
         empty=$((bar_width - filled))
         bar="$(printf "%0.s=" $(seq 1 "$filled"))"
-        bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
+        [ "$empty" -gt 0 ] && bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
 
         clear
+        echo -e ""
         printf "🔄 [%3d%%] [%-${bar_width}s]\n\n" "$percent" "$bar"
         [ -n "$MESSAGES" ] && printf "%b\n" "$MESSAGES"
     }
@@ -157,7 +238,7 @@ download_update() {
 
     draw_screen 0
 
-    add_msg "⬇️ Downloading AdGuardHome_${ARCH}.tar.gz..."
+    add_msg "⬇️ \x20Downloading AdGuardHome_${ARCH}.tar.gz..."
     draw_screen 10
     URL=$(build_download_url)
     if ! curl -sSL -o "AdGuardHome_${ARCH}.tar.gz" "$URL"; then
@@ -241,28 +322,126 @@ change_release_train() {
     get_latest_version
 }
 
+backup_adguardhome() {
+    AGH_DIR=$(dirname "$AGH_BIN")
+    AGH_BAK="$AGH_BIN.bak"
+
+    CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
+    if [ -z "$CONFIG_FILE" ]; then
+        echo -e "${RED}❌ Unable to determine AdGuardHome config file location.${NOCOLOR}"
+        return 1
+    fi
+
+    CONFIG_BAK="${CONFIG_FILE}.bak"
+
+    case "$backup_choice" in
+        both)
+            cp -f "$AGH_BIN" "$AGH_BAK"
+            cp -f "$CONFIG_FILE" "$CONFIG_BAK"
+            echo -e "${GREEN}✅ Binary and config backed up.${NOCOLOR}"
+            ;;
+        binary)
+            cp -f "$AGH_BIN" "$AGH_BAK"
+            echo -e "${GREEN}✅ Binary backed up.${NOCOLOR}"
+            ;;
+        config)
+            cp -f "$CONFIG_FILE" "$CONFIG_BAK"
+            echo -e "${GREEN}✅ Config backed up.${NOCOLOR}"
+            ;;
+        none)
+            echo "🛈 No backup selected."
+            ;;
+        *)
+            echo -e "${YELLOW}⚠️ Unknown backup option: $backup_choice${NOCOLOR}"
+            ;;
+    esac
+}
+
+restore_adguardhome() {
+    AGH_DIR=$(dirname "$AGH_BIN")
+    AGH_BAK="$AGH_BIN.bak"
+
+    CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
+    if [ -z "$CONFIG_FILE" ]; then
+        echo -e "${RED}❌ Unable to determine AdGuardHome config file location.${NOCOLOR}"
+        return 1
+    fi
+
+    CONFIG_BAK="${CONFIG_FILE}.bak"
+
+    echo -e "\n🕰️  Restore options:"
+    echo "  1) Restore both binary and config"
+    echo "  2) Restore binary only"
+    echo "  3) Restore config only"
+    echo "  4) Cancel"
+    echo -n "Choose an option: "
+    read restore_choice
+
+    case "$restore_choice" in
+        1)
+	    find_startup_script                                                                                                
+	    stop_adguardhome 
+            [ -f "$AGH_BAK" ] && cp -f "$AGH_BAK" "$AGH_BIN" && chmod +x "$AGH_BIN" \
+                && echo -e "${GREEN}✅ Binary restored.${NOCOLOR}" \
+                || echo -e "${RED}❌ Binary backup not found.${NOCOLOR}"
+            [ -f "$CONFIG_BAK" ] && cp -f "$CONFIG_BAK" "$CONFIG_FILE" \
+                && echo -e "${GREEN}✅ Config restored.${NOCOLOR}" \
+                || echo -e "${RED}❌ Config backup not found.${NOCOLOR}"
+            start_adguardhome
+	    ;;
+        2)
+            find_startup_script                                                                                        
+            stop_adguardhome 
+            [ -f "$AGH_BAK" ] && cp -f "$AGH_BAK" "$AGH_BIN" && chmod +x "$AGH_BIN" \
+                && echo -e "${GREEN}✅ Binary restored.${NOCOLOR}" \
+                || echo -e "${RED}❌ Binary backup not found.${NOCOLOR}"
+	    start_adguardhome
+            ;;
+        3)
+            find_startup_script                                                                                        
+            stop_adguardhome 
+            [ -f "$CONFIG_BAK" ] && cp -f "$CONFIG_BAK" "$CONFIG_FILE" \
+                && echo -e "${GREEN}✅ Config restored.${NOCOLOR}" \
+                || echo -e "${RED}❌ Config backup not found.${NOCOLOR}"
+            start_adguardhome
+	    ;;
+        *)
+            echo "Cancelled."
+            ;;
+    esac
+}
+
+
+
 #==================== MAIN ====================
 find_running_binary
+detect_arch
 get_current_version
 get_release_train
 get_latest_version
 show_info
 
 while true; do
-    echo -e "\n🧭 Please choose an option:"
-    echo -e "  1) 🚀 Update AdGuardHome"
-    echo -e "  2) 🔁 Change Release Train"
-    echo -e "  3) 🕰️  Restore Previous Version"
-    echo -e "  4) 🔧 Manage AdGuardHome (Start/Stop/Restart)"
-    echo -e "  5) ❌ Exit"
-    echo -n -e "\n📍 Enter choice: "
+    echo -e "\n📦 \x20Choose an option: "
+    echo -e "  1) 🚀 \x20Update AdGuardHome"
+    echo -e "  2) 🔁 \x20Change Release Train"
+    echo -e "  3) 🕰️  \x20Restore Previous Version"
+    echo -e "  4) 🔧 \x20Manage AdGuardHome (Start/Stop/Restart)"
+    echo -e "  5) ❌ \x20Exit"
+    echo -n -e "\n📍 \x20Enter choice: "
     read choice
 
     case "$choice" in
         1)
             echo -ne "\n💾 Backup option? (both/binary/config/none): "
             read backup_choice
-            echo "(Backup code here – currently not implemented)"
+	    case "$backup_choice" in
+                both)   backup_adguardhome both ;;
+                binary) backup_adguardhome binary ;;
+                config) backup_adguardhome config ;;
+                none)   echo "Skipping backup." ;;
+                *)      echo "Invalid option, skipping backup." ;;
+            esac
             download_update
             ;;
         2)
@@ -270,7 +449,7 @@ while true; do
             show_info
             ;;
         3)
-            echo "Restore functionality not yet implemented."
+            restore_adguardhome
             ;;
         4)
             manage_service
