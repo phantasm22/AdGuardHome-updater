@@ -219,6 +219,13 @@ stop_adguardhome() {
 start_adguardhome() {
     find_startup_script
     echo -e ""
+
+    pid=$(pidof AdGuardHome)
+    if [ -n "$pid" ]; then
+        echo -e "${GREEN}⚠️ AdGuardHome already started (PID $pid).${NOCOLOR}"
+        return 1
+    fi
+    
     echo -e "${BLUE}🚀 Attempting to start AdGuardHome...${NOCOLOR}"
 
     if [ -n "$STARTUP_SCRIPT" ]; then
@@ -235,7 +242,7 @@ start_adguardhome() {
             echo -e "${GREEN}✅ AdGuardHome started successfully (PID $pid).${NOCOLOR}"
             return 0
         fi
-        printf "\r⏳ Waiting for AdGuardHome to start... %s " "$((6 - i))"
+        printf "\r⏳ Waiting for AdGuardHome to start... %s " "$((31 - i))"
     done
     echo ""
     echo -e "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
@@ -261,7 +268,7 @@ restart_adguardhome() {
             echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
             return 0
         fi
-        printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$((6 - i))"
+        printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$((31 - i))"
     done
     echo ""
     echo -e "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
