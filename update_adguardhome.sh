@@ -46,7 +46,7 @@ LTBLUE='\033[96m'
 #================================================
 
 ARCH=""
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.1.0"
 AGH_BIN=""
 VERSION=""
 LATEST_VERSION=""
@@ -170,7 +170,7 @@ show_info() {
 
 find_startup_script() {
     STARTUP_SCRIPT=""
-    for file in /etc/init.d/[Aa]d[Gg]uard[Hh]ome /etc/rc.local /etc/rc.d/S[0-9][0-9]* /opt/etc/init.d/*; do
+    for file in /etc/init.d/[Aa]d[Gg]uard[Hh]ome /etc/rc.local /etc/rc.d/S[0-9][0-9]* /jffs/addons/AdGuardHome.d/AdGuardHome.sh  /opt/etc/init.d/*; do
         [ -f "$file" ] || continue
         grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return 0
     done
@@ -290,29 +290,38 @@ download_update() {
     mkdir -p "$TMP_DIR"
     cd "$TMP_DIR" || return 1
 
-    MESSAGES=""  # Accumulator for stacked status messages
+echo ""
 
-    draw_screen() {
-        percent="$1"
-        bar_width=50
-        filled=$((percent * bar_width / 100))
-        empty=$((bar_width - filled))
-        bar="$(printf "%0.s=" $(seq 1 "$filled"))"
-        [ "$empty" -gt 0 ] && bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
+draw_screen() {
+    percent="$1"
+    bar_width=50
+    filled=$((percent * bar_width / 100))
+    empty=$((bar_width - filled))
+    [ "$filled" -gt 0 ] && bar="$(printf "%0.s=" $(seq 1 "$filled"))"
+    [ "$empty" -gt 0 ] && bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
 
-        clear
-        echo -e ""
-        printf "🔄 [%3d%%] [%-${bar_width}s]\n\n" "$percent" "$bar"
-        [ -n "$MESSAGES" ] && printf "%b\n" "$MESSAGES"
-    }
+    # Determine how many lines to move up based on the percent step
+    case "$percent" in
+        0)    up_lines=0 ;;
+        10)   up_lines=2 ;;
+        25)   up_lines=3 ;;
+        50)   up_lines=4 ;;
+        60)   up_lines=9 ;;
+        85)   up_lines=10 ;;
+	100)  up_lines=14 ;;
+        *)    up_lines=0 ;;
+    esac
 
-    add_msg() {
-        MESSAGES="${MESSAGES}\n$1"
-    }
+    # Move up from that line
+    [ "$up_lines" -gt 0 ] && printf "\033[%dA" "$up_lines"
+    printf "🔄 [%3d%%] [%-${bar_width}s]\n" "$percent" "$bar"
+
+    # Move down again after drawing the bar to restore space for new messages
+    [ "$up_lines" -gt 1 ] && printf "\033[%dB" "$((up_lines - 0))"
+}
 
     draw_screen 0
-
-    add_msg "⬇️  Downloading AdGuardHome_${ARCH}.tar.gz..."
+    echo -e "⬇️  Downloading AdGuardHome_${ARCH}.tar.gz..."
     draw_screen 10
     URL=$(build_download_url)
     if ! curl -sSL -o "AdGuardHome_${ARCH}.tar.gz" "$URL"; then
@@ -322,40 +331,40 @@ download_update() {
         return 1
     fi
 
-    add_msg "🔧 Extracting files..."
+    echo -e "🔧 Extracting files..."
     draw_screen 25
     if ! tar -xzf "AdGuardHome_${ARCH}.tar.gz"; then
-        add_msg "${RED}❌ Extraction failed.${NOCOLOR}"
+        echo -e "${RED}❌ Extraction failed.${NOCOLOR}"
         draw_screen 25
         cd /tmp && rm -rf "$TMP_DIR"
         return 1
     fi
 
-    add_msg "🛑 Stopping AdGuardHome service..."
+    echo -e "🛑 Stopping AdGuardHome service..."
     draw_screen 50
     stop_adguardhome
 
-    add_msg "📁 Replacing binary..."
-    draw_screen 75
+    echo -e "📁 Replacing binary..."
+    draw_screen 60
     if [ -f "./AdGuardHome/AdGuardHome" ]; then
         cp -f ./AdGuardHome/AdGuardHome "$AGH_BIN"
         chmod +x "$AGH_BIN"
     else
-        add_msg "${RED}❌ Extracted binary not found.${NOCOLOR}"
+        echo -e "${RED}❌ Extracted binary not found.${NOCOLOR}"
         draw_screen 75
         cd /tmp && rm -rf "$TMP_DIR"
         return 1
     fi
 
-    add_msg "✅ Restarting service..."
-    draw_screen 100
+    echo -e "✅ Restarting service..."
+    draw_screen 85
     start_adguardhome
 
     NEW_VER="$($AGH_BIN --version | awk '{print $4}')"
     if [ "$NEW_VER" = "$LATEST_VERSION" ]; then
-        add_msg "✅ Update complete!"
+        echo -e "✅ Update complete!"
     else
-        add_msg "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
+        echo -e "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
     fi
     draw_screen 100
 
