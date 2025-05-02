@@ -393,7 +393,7 @@ backup_adguardhome() {
 
     CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
     if [ -z "$CONFIG_FILE" ]; then
-        echo -e "${RED}❌ Unable to determine AdGuardHome config file location.${NOCOLOR}"
+        echo -e "${RED}❌ Unable to determine AdGuardHome config file location. AdGuardHome running?${NOCOLOR}"
         return 1
     fi
 
@@ -419,6 +419,7 @@ backup_adguardhome() {
         *)
             echo -e "${YELLOW}⚠️ Unknown backup option: $backup_choice${NOCOLOR}"
             ;;
+    sleep 2
     esac
 }
 
