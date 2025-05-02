@@ -170,15 +170,11 @@ show_info() {
 
 find_startup_script() {
     STARTUP_SCRIPT=""
-    for file in /etc/rc.d/* /etc/rc.local /jffs/scripts/* /opt/etc/init.d/*; do
+    for file in /etc/init.d/[Aa]d[Gg]uard[Hh]ome /etc/rc.local /etc/rc.d/S[0-9][0-9]* /opt/etc/init.d/*; do
         [ -f "$file" ] || continue
-        if grep -q 'AdGuardHome' "$file"; then
-            STARTUP_SCRIPT="$file"
-            return 0
-        fi
+        grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return 0
     done
-
-    echo "${RED}❌ No AdGuardHome startup script found.${NOCOLOR}" >&2
+    echo -e "❌ No valid AdGuardHome startup script found." >&2
     return 1
 }
 
