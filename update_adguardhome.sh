@@ -199,7 +199,7 @@ stop_adguardhome() {
     fi
 
     # Countdown and check
-    for i in 5 4 3 2 1; do
+    for i in 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
         printf "\r⏳ Waiting... %s " "$i"
         sleep 1
         after_pid=$(pidof AdGuardHome)
@@ -228,7 +228,7 @@ start_adguardhome() {
     fi
 
     # Wait and check for startup
-    for i in 1 2 3 4 5; do
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
         sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
@@ -254,7 +254,7 @@ restart_adguardhome() {
     fi
 
     # Wait and check for startup
-    for i in 1 2 3 4 5; do
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
         sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
