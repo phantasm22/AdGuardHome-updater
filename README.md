@@ -1,29 +1,36 @@
-# AdGuardHome-Updater
-Shell script to update AdGuardHome on GL.iNet and Asus based routers. Others may work but unsupported.
+# update_adguardhome.sh
 
-## Features
-1. Checks for dependencies:
-   - Free disk space to upgrade
-   - Properly installed and running version of AGH
-   - Checks for the correct model and fails if you aren’t running the correct version
-1. Downloads and parses the available beta and release versions of AGH comparing to your current version and presents an output of the same
-1. Allows you to switch from beta to release and vice versa or just upgrade to the latest version of your chosen branch (if available)
-1. Will fetch the correct go binary based on your arch type
-1. Extracts the tarball (with a check that it can find the new binary file)
-1. Creates a backup of your existing binary and config files
-1. Disables your AGH service (temporarily)
-1. Copies new AGH binary into place
-1. Reloads AGH service
-1. Cleans up temp files created
-1. Status along the way with error handling and graceful exiting if something fails (e.g. cleanup of temp files)
+An interactive shell script for managing [AdGuardHome](https://github.com/AdguardTeam/AdGuardHome) on embedded Linux systems like OpenWRT, GL.iNet routers, and other minimal environments.
 
-## Tested Routers
-1. GL.iNet - MIPS
-2. Asus - 64Bit ARM
+---
 
-## Installation
-1. SSH to your router
-1. Change to the directory you'd like to download AGH updater
-1. `wget https://raw.githubusercontent.com/phantasm22/AdGuardHome-updater/main/update-agh.sh`
-1. `chmod +x ./update-agh.sh`
-1. `./update-agh.sh`
+## ✨ Features
+
+- 🚀 One-click update to the latest stable or beta AdGuardHome version
+- 🔁 Seamless switching between **Stable** and **Beta** release trains
+- 📦 Backup and restore:
+  - Binary only
+  - Config only
+  - Both
+- ⚙️ Manage AdGuardHome service (start/stop/restart)
+- 💬 Interactive, menu-driven interface with progress bar and messages
+- ✅ Verifies installation success before applying changes
+- 📊 Auto-detects architecture (e.g., `linux_arm64`, `linux_amd64`, etc.)
+- 🧼 Cleans up temporary files
+
+---
+
+## 🛠 Requirements
+
+- Minimal POSIX-compatible shell (`/bin/sh`)
+- Tools: `curl`, `tar`, `ps`, `kill`, `grep`, `awk`, `df`
+- Internet access to fetch updates from GitHub
+
+---
+
+## 📦 Installation
+
+1. Copy the script to your router or embedded system.
+2. Make it executable:
+   ```sh
+   chmod +x update_adguardhome.sh
