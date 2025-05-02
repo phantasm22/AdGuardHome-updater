@@ -50,8 +50,7 @@ To perform updates and backups, the script requires **at least 45MB** of free sp
 2. Download and make the script executable:
 
     ```sh
-    wget -O update_adguardhome.sh https://raw.githubusercontent.com/phantasm22/AdGuardHome-updater/main/update_adguardhome.sh
-    chmod +x update_adguardhome.sh
+    wget -O update_adguardhome.sh https://raw.githubusercontent.com/phantasm22/AdGuardHome-updater/main/update_adguardhome.sh && chmod +x update_adguardhome.sh
     ```
 
 3. Run the script:
