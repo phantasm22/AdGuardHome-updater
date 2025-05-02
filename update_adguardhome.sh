@@ -404,22 +404,25 @@ backup_adguardhome() {
             cp -f "$AGH_BIN" "$AGH_BAK"
             cp -f "$CONFIG_FILE" "$CONFIG_BAK"
             echo -e "${GREEN}✅ Binary and config backed up.${NOCOLOR}"
+	    sleep 2
             ;;
         binary)
             cp -f "$AGH_BIN" "$AGH_BAK"
             echo -e "${GREEN}✅ Binary backed up.${NOCOLOR}"
+	    sleep 2
             ;;
         config)
             cp -f "$CONFIG_FILE" "$CONFIG_BAK"
             echo -e "${GREEN}✅ Config backed up.${NOCOLOR}"
+	    sleep 2
             ;;
         none)
             echo "🛈 No backup selected."
+	    sleep 2
             ;;
         *)
             echo -e "${YELLOW}⚠️ Unknown backup option: $backup_choice${NOCOLOR}"
             ;;
-    sleep 2
     esac
 }
 
