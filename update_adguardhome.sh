@@ -294,30 +294,16 @@ echo ""
 
 draw_screen() {
     percent="$1"
-    bar_width=50
+    bar_width=25
     filled=$((percent * bar_width / 100))
     empty=$((bar_width - filled))
-    [ "$filled" -gt 0 ] && bar="$(printf "%0.s=" $(seq 1 "$filled"))"
-    [ "$empty" -gt 0 ] && bar="$bar$(printf "%0.s." $(seq 1 "$empty"))"
 
-    # Determine how many lines to move up based on the percent step
-    case "$percent" in
-        0)    up_lines=0 ;;
-        10)   up_lines=2 ;;
-        25)   up_lines=3 ;;
-        50)   up_lines=4 ;;
-        60)   up_lines=9 ;;
-        85)   up_lines=10 ;;
-	100)  up_lines=14 ;;
-        *)    up_lines=0 ;;
-    esac
+    bar=""
+    [ "$filled" -gt 0 ] && bar="$(printf "%${filled}s" | sed 's/ /🟩/g')"
+    [ "$empty" -gt 0 ] && bar="$bar$(printf "%${empty}s" | sed 's/ /⬜/g')"
 
-    # Move up from that line
-    [ "$up_lines" -gt 0 ] && printf "\033[%dA" "$up_lines"
-    printf "🔄 [%3d%%] [%-${bar_width}s]\n" "$percent" "$bar"
-
-    # Move down again after drawing the bar to restore space for new messages
-    [ "$up_lines" -gt 1 ] && printf "\033[%dB" "$((up_lines - 0))"
+    # Clear the line and redraw the progress bar
+    printf "\r🔄 [%3d%%] %-${bar_width}s\n" "$percent" "$bar"
 }
 
     draw_screen 0
@@ -362,11 +348,11 @@ draw_screen() {
 
     NEW_VER="$($AGH_BIN --version | awk '{print $4}')"
     if [ "$NEW_VER" = "$LATEST_VERSION" ]; then
-        echo -e "✅ Update complete!"
+        draw_screen 100
+ 	echo -e "✅ Update complete!"
     else
         echo -e "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
     fi
-    draw_screen 100
 
     cd /tmp && rm -rf "$TMP_DIR"
     return 0
