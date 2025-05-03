@@ -399,28 +399,28 @@ draw_screen() {
 
 manage_service() {
     echo -e "\n🔧 Manage AdGuardHome:"
-    echo -e "  ▶️  1) Start"
-    echo -e "  ⏹️  2) Stop"
-    echo -e "  🔄  3) Restart"
-    echo -e "  📋  4) Show Process Status"
-    echo -e "  ❌  5) Cancel\n"
-    read -n1 -p "👉 Select an option [1-5]: " opt
+    echo -e "  1) ▶️   Start"
+    echo -e "  2) ⏹️   Stop"
+    echo -e "  3) 🔄  Restart"
+    echo -e "  4) 📋  Show Process Status"
+    echo -e "  5) ❌  Cancel\n"
+    read -n1 -p "👉  Select an option [1-5]: " opt
     echo ""
     case "$opt" in
         1) start_adguardhome ;;
         2) stop_adguardhome ;;
         3) restart_adguardhome ;;
         4) show_process_status ;;
-        *) echo "🚫 Cancelled." ;;
+        *) ;;
     esac
 }
 
 change_release_train() {
     echo -e "\n🔁 Switch Release Train:"
-    echo -e "  🟢 1) Stable – Reliable and tested"
-    echo -e "  🧪 2) Beta   – New features, possibly unstable"
-    echo -e "  ❌ 3) Cancel\n"
-    read -n1 -p "👉 Select an option [1-3]: " opt
+    echo -e "  1) 🟢  Stable – Reliable and tested"
+    echo -e "  2) 🧪  Beta   – New features, possibly unstable"
+    echo -e "  3) ❌  Cancel\n"
+    read -n1 -p "👉  Select an option [1-3]: " opt
     echo ""
     case "$opt" in
         1) TRAIN="stable" && echo "✅ Switched to Stable release train." ;;
@@ -432,11 +432,12 @@ change_release_train() {
 
 backup_adguardhome() {
     echo -e "\n🕰️  Backup Options:"
-    echo -e "  📦  1) Backup Both Binary and Config"
-    echo -e "  💾  2) Backup Binary Only"
-    echo -e "  🧾  3) Backup Config Only"
-    echo -e "  ❌  4) No Backup\n"
-    read -n1 -p "👉 Choose an option [1-4]: " backup_choice
+    echo -e "  1) 📦  Backup Both Binary and Config"
+    echo -e "  2) 💾  Backup Binary Only"
+    echo -e "  3) 🧾  Backup Config Only"
+    echo -e "  4) ❌  No Backup"
+    echo -e "  5) 🛑  Cancel
+    read -n1 -p "👉 Choose an option [1-5]: " backup_choice
     echo ""
     
     AGH_DIR=$(dirname "$AGH_BIN")
@@ -467,8 +468,10 @@ backup_adguardhome() {
         4)
             echo "❌🛈 No backup selected."
             ;;
-        *)
-            echo -e "${YELLOW}⚠️  Unknown backup option: $backup_choice${NOCOLOR}"
+	*) 
+ 	    echo "🛑 Cancelled."
+            sleep 2
+            return 1
             ;;
     esac
 }
@@ -486,10 +489,10 @@ restore_adguardhome() {
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     echo -e "\n🕰️  Restore Options:"
-    echo -e "  📦  1) Restore Both Binary and Config"
-    echo -e "  💾  2) Restore Binary Only"
-    echo -e "  🧾  3) Restore Config Only"
-    echo -e "  ❌  4) Cancel\n"
+    echo -e "  1) 📦  Restore Both Binary and Config"
+    echo -e "  2) 💾  Restore Binary Only"
+    echo -e "  3) 🧾  Restore Config Only"
+    echo -e "  4) ❌  Cancel\n"
     read -n1 -p "👉  Choose an option [1-4]: " restore_choice
     echo ""
 
@@ -518,10 +521,7 @@ restore_adguardhome() {
                 || echo -e "${RED}❌ Config backup not found.${NOCOLOR}"
             start_adguardhome
 	    ;;
-        *)
-            echo "❌  Cancelled."
-	    sleep 2
-            ;;
+        *)  ;;
     esac
 }
 
@@ -547,7 +547,7 @@ while true; do
     
     case "$choice" in
         1)
-            backup_adguardhome
+            backup_adguardhome || { show_info; continue; }
             download_update
 	    printf "⏎  Press ${LTBLUE}enter${NOCOLOR} to continue..."
     	    read dummy
