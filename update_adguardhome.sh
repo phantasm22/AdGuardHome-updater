@@ -296,14 +296,15 @@ restart_adguardhome() {
 }
 
 show_process_status() {
-    echo -e "\n[  🔍 Checking for process: AdGuardHome  ]"
+    echo -e "\n\n[  🔍 Checking for process: AdGuardHome  ]"
 
     # Capture process info (excluding the grep line)
     proc_info=$(ps | grep -i adguardhome | grep -v grep | grep -v update_adguardhome.sh)
 
     if [ -n "$proc_info" ]; then
-        echo -e "   ✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:"
-        echo -e "   $proc_info"
+        echo -e "   ✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:\n"
+        echo -e "${GREEN}─────────── ⏹ Beginning of Output ⏹ ───────────${NOCOLOR}"
+	echo -e "   $proc_info"
 	echo -e "${GREEN}────────────── ⏹ End of Output ⏹ ──────────────${NOCOLOR}"
     else
         echo -e "   ❌ Process \"${RED}AdGuardHome${NOCOLOR}\" not found."
