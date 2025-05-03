@@ -320,8 +320,7 @@ download_update() {
     CURRENT_VER="$($AGH_BIN --version 2>/dev/null | awk '{print $4}')"
     if [ "$CURRENT_VER" = "$LATEST_VERSION" ]; then
         echo -e "✅ AdGuardHome is already at the latest version ($CURRENT_VER)."
-        echo -n "🔁 Do you want to redownload and overwrite it anyway? [y/N]: "
-        read -r confirm
+        read -r -p "🔁 Do you want to redownload and overwrite it anyway? [y/N]: " confirm
         [ "$confirm" != "y" ] && echo "ℹ️  Skipping update." && return 0
     fi
 
@@ -347,7 +346,7 @@ draw_screen() {
 
     draw_screen 0
     echo -e "⬇️  Downloading AdGuardHome_${ARCH}.tar.gz..."
-    draw_screen 10
+    draw_screen 16
     URL=$(build_download_url)
     if ! curl -sSL -o "AdGuardHome_${ARCH}.tar.gz" "$URL"; then
         add_msg "${RED}❌ Failed to download from $URL${NOCOLOR}"
@@ -357,7 +356,7 @@ draw_screen() {
     fi
 
     echo -e "🔧 Extracting files..."
-    draw_screen 25
+    draw_screen 33
     if ! tar -xzf "AdGuardHome_${ARCH}.tar.gz"; then
         echo -e "${RED}❌ Extraction failed.${NOCOLOR}"
         draw_screen 25
@@ -370,19 +369,19 @@ draw_screen() {
     stop_adguardhome
 
     echo -e "📁 Replacing binary..."
-    draw_screen 60
+    draw_screen 66
     if [ -f "./AdGuardHome/AdGuardHome" ]; then
         cp -f ./AdGuardHome/AdGuardHome "$AGH_BIN"
         chmod +x "$AGH_BIN"
     else
         echo -e "${RED}❌ Extracted binary not found.${NOCOLOR}"
-        draw_screen 75
+        draw_screen 73
         cd /tmp && rm -rf "$TMP_DIR"
         return 1
     fi
 
     echo -e "✅ Restarting service..."
-    draw_screen 85
+    draw_screen 83
     start_adguardhome
 
     NEW_VER="$($AGH_BIN --version | awk '{print $4}')"
@@ -398,39 +397,46 @@ draw_screen() {
 }
 
 manage_service() {
-    echo -e "\n🔧 Manage AdGuardHome:"
-    echo "  1) Start"
-    echo "  2) Stop"
-    echo "  3) Restart"
-    echo "  4) Show process status (ps)"
-    echo "  5) Cancel"
-    echo -n "Select an option: "
-    read opt
+    echo ""
+    echo "🔧 Manage AdGuardHome:"
+    echo "  ▶️  1) Start"
+    echo "  ⏹️  2) Stop"
+    echo "  🔄  3) Restart"
+    echo "  📋  4) Show Process Status"
+    echo "  ❌  5) Cancel"
+    read -n1 -p "👉 Select an option [1-5]: " opt
     case "$opt" in
         1) start_adguardhome ;;
         2) stop_adguardhome ;;
         3) restart_adguardhome ;;
-	4) show_process_status ;;
-        *) echo "Cancelled." ;;
+        4) show_process_status ;;
+        *) echo "🚫 Cancelled." ;;
     esac
 }
 
 change_release_train() {
-    echo -e "\n🔁 Switch to release train:"
-    echo -e "  1) stable"
-    echo -e "  2) beta"
-    echo -e "  3) cancel"
-    echo -e -n "Select an option: "
-    read opt
+    echo ""
+    echo "🔁 Switch Release Train:"
+    echo "  🟢 1) Stable – Reliable and tested"
+    echo "  🧪 2) Beta   – New features, possibly unstable"
+    echo "  ❌ 3) Cancel"
+    read -n1 -p "👉 Select an option [1-3]: " opt
     case "$opt" in
-        1) TRAIN="stable" ;;
-        2) TRAIN="beta" ;;
-        *) echo -e "Cancelled."; return ;;
+        1) TRAIN="stable" && echo "✅ Switched to Stable release train." ;;
+        2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." ;;
+        *) echo "🚫 Cancelled." ; return ;;
     esac
     get_latest_version
 }
 
 backup_adguardhome() {
+    echo -e "\n🕰️  Backup Options:"
+    echo "  📦  1) Backup Both Binary and Config"
+    echo "  💾  2) Backup Binary Only"
+    echo "  🧾  3) Backup Config Only"
+    echo "  ❌  4) No Backup"
+    read -n1 -p "👉 Choose an option [1-4]: " backup_choice
+    
     AGH_DIR=$(dirname "$AGH_BIN")
     AGH_BAK="$AGH_BIN.bak"
 
@@ -443,25 +449,21 @@ backup_adguardhome() {
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     case "$backup_choice" in
-        both)
+        1)
             cp -f "$AGH_BIN" "$AGH_BAK"
             cp -f "$CONFIG_FILE" "$CONFIG_BAK"
             echo -e "${GREEN}✅ Binary and config backed up.${NOCOLOR}"
-	    sleep 2
             ;;
-        binary)
+        2)
             cp -f "$AGH_BIN" "$AGH_BAK"
             echo -e "${GREEN}✅ Binary backed up.${NOCOLOR}"
-	    sleep 2
             ;;
-        config)
+        3)
             cp -f "$CONFIG_FILE" "$CONFIG_BAK"
             echo -e "${GREEN}✅ Config backed up.${NOCOLOR}"
-	    sleep 2
             ;;
-        none)
-            echo "🛈 No backup selected."
-	    sleep 2
+        4)
+            echo "❌🛈 No backup selected."
             ;;
         *)
             echo -e "${YELLOW}⚠️  Unknown backup option: $backup_choice${NOCOLOR}"
@@ -475,19 +477,18 @@ restore_adguardhome() {
 
     CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
     if [ -z "$CONFIG_FILE" ]; then
-        echo -e "${RED}❌ Unable to determine AdGuardHome config file location.${NOCOLOR}"
+        echo -e "${RED}❌ Unable to determine AdGuardHome config file location. AdGuardHome running?${NOCOLOR}"
         return 1
     fi
 
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
-    echo -e "\n🕰️  Restore options:"
-    echo "  1) Restore both binary and config"
-    echo "  2) Restore binary only"
-    echo "  3) Restore config only"
-    echo "  4) Cancel"
-    echo -n "Choose an option: "
-    read restore_choice
+    echo -e "\n🕰️  Restore Options:"
+    echo "  📦  1) Restore Both Binary and Config"
+    echo "  💾  2) Restore Binary Only"
+    echo "  🧾  3) Restore Config Only"
+    echo "  ❌  4) Cancel"
+    read -n1 -p "👉  Choose an option [1-4]: " restore_choice
 
     case "$restore_choice" in
         1)                                                                                             
@@ -515,7 +516,7 @@ restore_adguardhome() {
             start_adguardhome
 	    ;;
         *)
-            echo "Cancelled."
+            echo "❌  Cancelled."
 	    sleep 2
             ;;
     esac
@@ -538,20 +539,11 @@ while true; do
     echo -e "  3) 🕰️   Restore Previous Version"
     echo -e "  4) 🔧  Manage AdGuardHome (Start/Stop/Restart)"
     echo -e "  5) ❌  Exit"
-    echo -n -e "\n📍  Enter choice: "
-    read choice
+    read -n1 -p "\n👉  Enter choice: " choice
 
     case "$choice" in
         1)
-            echo -ne "\n💾 Backup option? (both/binary/config/none): "
-            read backup_choice
-	    case "$backup_choice" in
-                both)   backup_adguardhome both ;;
-                binary) backup_adguardhome binary ;;
-                config) backup_adguardhome config ;;
-                none)   echo "Skipping backup." ;;
-                *)      echo "Invalid option, skipping backup." ;;
-            esac
+            backup_adguardhome
             download_update
 	    printf "⏎  Press ${LTBLUE}enter${NOCOLOR} to continue..."
     	    read dummy
@@ -570,11 +562,11 @@ while true; do
 	    show_info
             ;;
         5)
-            echo "Exiting..."
+            echo "🔚  Exiting..."
             exit 0
             ;;
         *)
-            echo "Invalid choice."
+            echo "⚠️  Invalid choice."
             ;;
     esac
 done
