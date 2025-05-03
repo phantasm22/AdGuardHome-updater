@@ -567,6 +567,7 @@ while true; do
             ;;
         5)
             echo "🔚  Exiting..."
+	    echo ""
             exit 0
             ;;
         *)
