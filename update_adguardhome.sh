@@ -110,18 +110,13 @@ find_running_binary() {
             AGH_BIN="$exe"
             return
         fi
-    fi
-
-    # Try startup script fallback
-    for candidate in /etc/init.d/* /etc/rc.local /etc/rc.d/* /etc/config/* /opt/etc/init.d/*; do
-        [ -f "$candidate" ] || continue
-        bin=$(grep -Eo '/[^ ]*/AdGuardHome' "$candidate" | head -n1)
-        if [ -n "$bin" ] && [ -x "$bin" ]; then
-            AGH_BIN="$bin"
-            return
+    else
+	exe=$(which AdGuardHome)
+        if [ -x "$exe" ]; then                                                                            
+            AGH_BIN="$exe"                                                                                
+            return                                                                                        
         fi
-    done
-
+    fi
     echo -e "${RED}❌ AdGuardHome binary not found.${NOCOLOR}"
 }
 
@@ -166,6 +161,12 @@ show_info() {
     else
         echo -e "Update Available: ${YELLOW}Yes${NOCOLOR}"
     fi
+    if [ -n "$(pidof AdGuardHome 2>/dev/null)" ]; then
+        echo -e "AdGuardHome status: 🟢 ${GREEN}Running${NOCOLOR}"
+    else
+        echo -e "AdGuardHome status: 🔴 ${RED}Stopped${NOCOLOR}"
+fi
+    
 }
 
 find_startup_script() {
@@ -198,12 +199,22 @@ stop_adguardhome() {
         kill "$before_pid" 2>/dev/null
     fi
 
-    # Countdown and check
-    for i in 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1; do
-        printf "\r⏳ Waiting... %s " "$i"
+    i=60 #Max timer
+    ii=3 #Time to wait after process ends to continue 
+    while [ "$i" -gt 0 ] && [ "$ii" -gt 0 ]; do
+	printf "\r⏳ Waiting... %s " "$i"
         sleep 1
-        after_pid=$(pidof AdGuardHome)
-        [ -z "$after_pid" ] && break
+        after_pid=$(pidof AdGuardHome 2>/dev/null)
+	asus_pid=$(pidof S99AdGuardHome 2>/dev/null)
+
+        if [ -z "$after_pid" ] && [ -z "$asus_pid" ]; then
+	    if [ "$ii" -eq 0 ]; then
+		break
+	    fi
+	    ii=$((ii - 1))
+        fi
+
+        i=$((i - 1))
     done
     echo ""
 
@@ -213,6 +224,7 @@ stop_adguardhome() {
     fi
 
     echo -e "${GREEN}✅ AdGuardHome stopped successfully.${NOCOLOR}"
+    sleep 2
     return 0
 }
 
@@ -223,6 +235,7 @@ start_adguardhome() {
     pid=$(pidof AdGuardHome)
     if [ -n "$pid" ]; then
         echo -e "${GREEN}⚠️  AdGuardHome already started (PID $pid).${NOCOLOR}"
+	sleep 2
         return 1
     fi
     
@@ -235,17 +248,21 @@ start_adguardhome() {
     fi
 
     # Wait and check for startup
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+    i=60 #max timer
+    while [ "$i" -gt 0 ]; do 
         sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
             echo -e "${GREEN}✅ AdGuardHome started successfully (PID $pid).${NOCOLOR}"
-            return 0
+            sleep 2
+	    return 0
         fi
-        printf "\r⏳ Waiting for AdGuardHome to start... %s " "$((31 - i))"
+        printf "\r⏳ Waiting for AdGuardHome to start... %s " "$i"
+        i=$((i-1))
     done
     echo ""
     echo -e "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
+    sleep 2
     return 1
 }
 
@@ -261,18 +278,40 @@ restart_adguardhome() {
     fi
 
     # Wait and check for startup
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
-        sleep 1
+    while [ "$i" -gt 0 ]; do
+	sleep 1
         pid=$(pidof AdGuardHome)
         if [ -n "$pid" ]; then
             echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
-            return 0
+            sleep 2
+	    return 0
         fi
-        printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$((31 - i))"
+        printf "\r⏳ Waiting for AdGuardHome to restart... %s " "$i"
+	i=$((i-1))
     done
     echo ""
     echo -e "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
+    sleep 2
     return 1
+}
+
+show_process_status() {
+    echo ""
+    echo -e "🔍 Checking for process: AdGuardHome"
+
+    # Capture process info (excluding the grep line)
+    proc_info=$(ps | grep -i adguardhome | grep -v grep | grep -v update_adguardhome.sh)
+
+    if [ -n "$proc_info" ]; then
+        echo -e "✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:\n"
+        echo -e "$proc_info"
+    else
+        echo -e "❌ Process \"${RED}AdGuardHome${NOCOLOR}\" not found."
+    fi
+
+    echo ""
+    printf "⏎  Press ${LTBLUE}enter${NOCOLOR} to continue..."
+    read dummy
 }
 
 download_update() {
@@ -294,7 +333,7 @@ echo ""
 
 draw_screen() {
     percent="$1"
-    bar_width=25
+    bar_width=24
     filled=$((percent * bar_width / 100))
     empty=$((bar_width - filled))
 
@@ -363,13 +402,15 @@ manage_service() {
     echo "  1) Start"
     echo "  2) Stop"
     echo "  3) Restart"
-    echo "  4) Cancel"
+    echo "  4) Show process status (ps)"
+    echo "  5) Cancel"
     echo -n "Select an option: "
     read opt
     case "$opt" in
         1) start_adguardhome ;;
         2) stop_adguardhome ;;
         3) restart_adguardhome ;;
+	4) show_process_status ;;
         *) echo "Cancelled." ;;
     esac
 }
@@ -521,6 +562,7 @@ while true; do
             ;;
         4)
             manage_service
+	    show_info
             ;;
         5)
             echo "Exiting..."
