@@ -268,6 +268,15 @@ start_adguardhome() {
 
 restart_adguardhome() {
     find_startup_script
+    local before_pid after_pid i
+
+    before_pid=$(pidof AdGuardHome)
+    echo -e ""
+    if [ -z "$before_pid" ]; then
+        echo -e "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
+        return 0
+    fi
+    
     echo -e ""
     echo -e "${BLUE}🚀 Attempting to restart AdGuardHome...${NOCOLOR}"
 
@@ -281,8 +290,8 @@ restart_adguardhome() {
     i=60 #max timer
     while [ "$i" -gt 0 ]; do
 	sleep 1
-        pid=$(pidof AdGuardHome)
-        if [ -n "$pid" ]; then
+        after_pid=$(pidof AdGuardHome)
+        if [ "$before_pid" -ne "$after_pid" ] && [ -n "$after_pid" ]; then
             echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
             sleep 2
 	    return 0
