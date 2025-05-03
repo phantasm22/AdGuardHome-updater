@@ -411,7 +411,7 @@ manage_service() {
         2) stop_adguardhome ;;
         3) restart_adguardhome ;;
         4) show_process_status ;;
-        *) ;;
+        *) return ;;
     esac
 }
 
@@ -425,7 +425,7 @@ change_release_train() {
     case "$opt" in
         1) TRAIN="stable" && echo "✅ Switched to Stable release train." ;;
         2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." ;;
-        *) echo "🚫 Cancelled." ; return ;;
+        *) return ;;
     esac
     get_latest_version
 }
@@ -436,7 +436,7 @@ backup_adguardhome() {
     echo -e "  2) 💾  Backup Binary Only"
     echo -e "  3) 🧾  Backup Config Only"
     echo -e "  4) ❌  No Backup"
-    echo -e "  5) 🛑  Cancel
+    echo -e "  5) 🛑  Cancel"
     read -n1 -p "👉 Choose an option [1-5]: " backup_choice
     echo ""
     
@@ -521,7 +521,7 @@ restore_adguardhome() {
                 || echo -e "${RED}❌ Config backup not found.${NOCOLOR}"
             start_adguardhome
 	    ;;
-        *)  ;;
+        *)  return ;;
     esac
 }
 
