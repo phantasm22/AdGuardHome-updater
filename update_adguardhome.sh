@@ -296,14 +296,13 @@ restart_adguardhome() {
 }
 
 show_process_status() {
-    echo ""
-    echo -e "🔍 Checking for process: AdGuardHome"
+    echo -e "\n[  🔍 Checking for process: AdGuardHome  ]\n"
 
     # Capture process info (excluding the grep line)
     proc_info=$(ps | grep -i adguardhome | grep -v grep | grep -v update_adguardhome.sh)
 
     if [ -n "$proc_info" ]; then
-        echo -e "✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:\n"
+        echo -e "✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:"
         echo -e "$proc_info"
     else
         echo -e "❌ Process \"${RED}AdGuardHome${NOCOLOR}\" not found."
@@ -427,8 +426,8 @@ change_release_train() {
     read -n1 -p "👉  Select an option [1-3]: " opt
     echo ""
     case "$opt" in
-        1) TRAIN="stable" && echo "✅ Switched to Stable release train." ;;
-        2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." ;;
+        1) TRAIN="stable" && echo "✅ Switched to Stable release train." && sleep 1 ;;
+        2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." && sleep 1 ;;
         *) return ;;
     esac
     get_latest_version
@@ -436,7 +435,7 @@ change_release_train() {
 
 backup_adguardhome() {
     echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-    echo -e "┃  🕰️  Backup Options 🕰️  ┃"
+    echo -e "┃  🕰️  Backup Options 🕰️    ┃"
     echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 📦  Backup Both Binary and Config"
     echo -e "  2) 💾  Backup Binary Only"
@@ -495,7 +494,7 @@ restore_adguardhome() {
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
-    echo -e "┃  🕰️  Restore Options 🕰️  ┃"
+    echo -e "┃  🕰️  Restore Options 🕰️    ┃"
     echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 📦  Restore Both Binary and Config"
     echo -e "  2) 💾  Restore Binary Only"
