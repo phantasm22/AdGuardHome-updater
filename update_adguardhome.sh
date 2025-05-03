@@ -58,20 +58,20 @@ TMP_DIR="/tmp/agh-update"
 show_splash_screen() {                              
     clear
     echo -e                                               
-    echo -e "${LTBLUE}+------------------------------------------------------------------------------+"
-    echo -e "|    _       _  ____                     _ _   _                               |"       
-    echo -e "|   / \   __| |/ ___|_   _  __ _ _ __ __| | | | | ___  _ __ ___   ___          |"       
-    echo -e "|  / _ \ / _\` | |  _| | | |/ _\` | '__/ _\` | |_| |/ _ \| '_ \` _ \ / _ \         |"       
-    echo -e "| / ___ \ (_| | |_| | |_| | (_| | | | (_| |  _  | (_) | | | | | |  __/         |"       
-    echo -e "|/_/  _\_\__,_|\____|\__,_|\__,_|_|  \__,_|_| |_|\___/|_| |_| |_|\___|         |"       
-    echo -e "| | | | |_ __   __| | __ _| |_ ___ _ __                                        |"        
-    echo -e "| | | | | '_ \ / _\` |/ _\` | __/ _ \ '__|                                       |"        
-    echo -e "| | |_| | |_) | (_| | (_| | ||  __/ |                                          |"        
-    echo -e "|  \___/| .__/ \__,_|\__,_|\__\___|_|                                          |"        
-    echo -e "|       |_|                                   by Phantasm22                    |"          
-    echo -e "|                                             v.${SCRIPT_VERSION}                          |"           
-    echo -e "+------------------------------------------------------------------------------+${NOCOLOR}"
-}  
+    echo -e "${BLUE}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃${LTBLUE}        _       _  ____                     _ _   _                           ${BLUE}┃"       
+    echo -e "┃${LTBLUE}       / \   __| |/ ___|_   _  __ _ _ __ __| | | | | ___  _ __ ___   ___      ${BLUE}┃"       
+    echo -e "┃${LTBLUE}      / _ \ / _\` | |  _| | | |/ _\` | '__/ _\` | |_| |/ _ \| '_ \` _ \ / _ \     ${BLUE}┃"       
+    echo -e "┃${LTBLUE}     / ___ \ (_| | |_| | |_| | (_| | | | (_| |  _  | (_) | | | | | |  __/     ${BLUE}┃"       
+    echo -e "┃${LTBLUE}    /_/  _\_\__,_|\____|\__,_|\__,_|_|  \__,_|_| |_|\___/|_| |_| |_|\___|     ${BLUE}┃"       
+    echo -e "┃${LTBLUE}     | | | |_ __   __| | __ _| |_ ___ _ __                                    ${BLUE}┃"        
+    echo -e "┃${LTBLUE}     | | | | '_ \ / _\` |/ _\` | __/ _ \ '__|                                   ${BLUE}┃"        
+    echo -e "┃${LTBLUE}     | |_| | |_) | (_| | (_| | ||  __/ |                                      ${BLUE}┃"        
+    echo -e "┃${LTBLUE}      \___/| .__/ \__,_|\__,_|\__\___|_|                                      ${BLUE}┃"        
+    echo -e "┃${LTBLUE}           |_|                                   by Phantasm22                ${BLUE}┃"          
+    echo -e "┃${LTBLUE}                                                 ${GREEN}v.${SCRIPT_VERSION}                      ${BLUE}┃"           
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NOCOLOR}"
+} 
 
 detect_arch() {
     uname_s=$(uname -s | sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/')
@@ -398,7 +398,9 @@ draw_screen() {
 }
 
 manage_service() {
-    echo -e "\n🔧 Manage AdGuardHome:\n"
+    echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃  🔧 Manage AdGuardHome 🔧  ┃"
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"    
     echo -e "  1) ▶️   Start"
     echo -e "  2) ⏹️   Stop"
     echo -e "  3) 🔄  Restart"
@@ -416,7 +418,9 @@ manage_service() {
 }
 
 change_release_train() {
-    echo -e "\n🔁 Switch Release Train:\n"
+    echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃  🔁 Switch Release Train 🔁  ┃"
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 🟢  Stable – Reliable and tested"
     echo -e "  2) 🧪  Beta   – New features, possibly unstable"
     echo -e "  3) ❌  Cancel\n"
@@ -431,13 +435,15 @@ change_release_train() {
 }
 
 backup_adguardhome() {
-    echo -e "\n🕰️  Backup Options:"
+    echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃  🕰️  Backup Options 🕰️  ┃"
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 📦  Backup Both Binary and Config"
     echo -e "  2) 💾  Backup Binary Only"
     echo -e "  3) 🧾  Backup Config Only"
     echo -e "  4) ❌  No Backup"
     echo -e "  5) 🛑  Cancel\n"
-    read -n1 -p "👉 Choose an option [1-5]: " backup_choice
+    read -n1 -p "👉 Select an option [1-5]: " backup_choice
     echo ""
     
     AGH_DIR=$(dirname "$AGH_BIN")
@@ -488,12 +494,14 @@ restore_adguardhome() {
 
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
-    echo -e "\n🕰️  Restore Options:\n"
+    echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃  🕰️  Restore Options 🕰️  ┃"
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 📦  Restore Both Binary and Config"
     echo -e "  2) 💾  Restore Binary Only"
     echo -e "  3) 🧾  Restore Config Only"
     echo -e "  4) ❌  Cancel\n"
-    read -n1 -p "👉  Choose an option [1-4]: " restore_choice
+    read -n1 -p "👉  Select an option [1-4]: " restore_choice
     echo ""
 
     case "$restore_choice" in
@@ -536,13 +544,15 @@ get_latest_version
 show_info
 
 while true; do
-    echo -e "\n📦  Choose an option:\n"
+    echo -e "\n┏━━━━━━━━━━━━━━━━━━━━━┓"
+    echo -e "┃  📦  Main Menu  📦  ┃"
+    echo -e "┗━━━━━━━━━━━━━━━━━━━━━┛"
     echo -e "  1) 🚀  Update AdGuardHome"
     echo -e "  2) 🔁  Change Release Train"
     echo -e "  3) 🕰️   Restore Previous Version"
     echo -e "  4) 🔧  Manage AdGuardHome (Start/Stop/Restart)"
     echo -e "  5) ❌  Exit\n"
-    read -n1 -p "👉  Enter choice: " choice
+    read -n1 -p "👉  Select an option [1-5]: " choice
     echo ""
     
     case "$choice" in
