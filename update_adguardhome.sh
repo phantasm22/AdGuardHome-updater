@@ -292,7 +292,7 @@ restart_adguardhome() {
 	sleep 1
         after_pid=$(pidof AdGuardHome)
         if [ -n "$after_pid" ] && [ "$before_pid" -ne "$after_pid" ] ; then
-            echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
+            echo -e "\n${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
             sleep 2
 	    return 0
         fi
