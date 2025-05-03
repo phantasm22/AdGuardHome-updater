@@ -304,7 +304,7 @@ show_process_status() {
     if [ -n "$proc_info" ]; then
         echo -e "   ✅ Process \"${GREEN}AdGuardHome${NOCOLOR}\" is running:\n"
         echo -e "${GREEN}─────────── ⏹ Beginning of Output ⏹ ───────────${NOCOLOR}"
-	echo -e "   $proc_info"
+	echo -e "$proc_info"
 	echo -e "${GREEN}────────────── ⏹ End of Output ⏹ ──────────────${NOCOLOR}"
     else
         echo -e "   ❌ Process \"${RED}AdGuardHome${NOCOLOR}\" not found."
