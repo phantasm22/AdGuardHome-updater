@@ -398,7 +398,7 @@ draw_screen() {
 }
 
 manage_service() {
-    echo -e "\n🔧 Manage AdGuardHome:"
+    echo -e "\n🔧 Manage AdGuardHome:\n"
     echo -e "  1) ▶️   Start"
     echo -e "  2) ⏹️   Stop"
     echo -e "  3) 🔄  Restart"
@@ -416,7 +416,7 @@ manage_service() {
 }
 
 change_release_train() {
-    echo -e "\n🔁 Switch Release Train:"
+    echo -e "\n🔁 Switch Release Train:\n"
     echo -e "  1) 🟢  Stable – Reliable and tested"
     echo -e "  2) 🧪  Beta   – New features, possibly unstable"
     echo -e "  3) ❌  Cancel\n"
@@ -436,7 +436,7 @@ backup_adguardhome() {
     echo -e "  2) 💾  Backup Binary Only"
     echo -e "  3) 🧾  Backup Config Only"
     echo -e "  4) ❌  No Backup"
-    echo -e "  5) 🛑  Cancel"
+    echo -e "  5) 🛑  Cancel\n"
     read -n1 -p "👉 Choose an option [1-5]: " backup_choice
     echo ""
     
@@ -488,7 +488,7 @@ restore_adguardhome() {
 
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
-    echo -e "\n🕰️  Restore Options:"
+    echo -e "\n🕰️  Restore Options:\n"
     echo -e "  1) 📦  Restore Both Binary and Config"
     echo -e "  2) 💾  Restore Binary Only"
     echo -e "  3) 🧾  Restore Config Only"
@@ -536,7 +536,7 @@ get_latest_version
 show_info
 
 while true; do
-    echo -e "\n📦  Choose an option: "
+    echo -e "\n📦  Choose an option:\n"
     echo -e "  1) 🚀  Update AdGuardHome"
     echo -e "  2) 🔁  Change Release Train"
     echo -e "  3) 🕰️   Restore Previous Version"
