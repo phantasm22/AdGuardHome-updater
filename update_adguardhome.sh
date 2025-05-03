@@ -516,6 +516,7 @@ restore_adguardhome() {
 	    ;;
         *)
             echo "Cancelled."
+	    sleep 2
             ;;
     esac
 }
@@ -552,6 +553,9 @@ while true; do
                 *)      echo "Invalid option, skipping backup." ;;
             esac
             download_update
+	    printf "⏎  Press ${LTBLUE}enter${NOCOLOR} to continue..."
+    	    read dummy
+	    show_info
             ;;
         2)
             change_release_train
@@ -559,6 +563,7 @@ while true; do
             ;;
         3)
             restore_adguardhome
+	    show_info
             ;;
         4)
             manage_service
