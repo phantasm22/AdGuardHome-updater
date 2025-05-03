@@ -291,7 +291,7 @@ restart_adguardhome() {
     while [ "$i" -gt 0 ]; do
 	sleep 1
         after_pid=$(pidof AdGuardHome)
-        if [ "$before_pid" -ne "$after_pid" ] && [ -n "$after_pid" ]; then
+        if [ -n "$after_pid" ] && [ "$before_pid" -ne "$after_pid" ] ; then
             echo -e "${GREEN}✅ AdGuardHome restarted successfully (PID $pid).${NOCOLOR}"
             sleep 2
 	    return 0
