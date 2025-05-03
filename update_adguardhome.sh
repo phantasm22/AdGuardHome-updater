@@ -277,7 +277,8 @@ restart_adguardhome() {
         "$AGH_BIN" -s restart 2>/dev/null
     fi
 
-    # Wait and check for startup
+    # Wait and check for restart
+    i=60 #max timer
     while [ "$i" -gt 0 ]; do
 	sleep 1
         pid=$(pidof AdGuardHome)
