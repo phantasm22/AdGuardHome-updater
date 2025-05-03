@@ -319,8 +319,9 @@ download_update() {
 
     CURRENT_VER="$($AGH_BIN --version 2>/dev/null | awk '{print $4}')"
     if [ "$CURRENT_VER" = "$LATEST_VERSION" ]; then
-        echo -e "✅ AdGuardHome is already at the latest version ($CURRENT_VER)."
-        read -r -p "🔁 Do you want to redownload and overwrite it anyway? [y/N]: " confirm
+        echo -e "✅ AdGuardHome is already at the latest version ($CURRENT_VER).\n"
+        read -n1 -p "🔁 Do you want to redownload and overwrite it anyway? [y/N]: " confirm
+	echo ""
         [ "$confirm" != "y" ] && echo "ℹ️  Skipping update." && return 0
     fi
 
@@ -397,14 +398,14 @@ draw_screen() {
 }
 
 manage_service() {
-    echo ""
-    echo "🔧 Manage AdGuardHome:"
-    echo "  ▶️  1) Start"
-    echo "  ⏹️  2) Stop"
-    echo "  🔄  3) Restart"
-    echo "  📋  4) Show Process Status"
-    echo "  ❌  5) Cancel"
+    echo -e "\n🔧 Manage AdGuardHome:"
+    echo -e "  ▶️  1) Start"
+    echo -e "  ⏹️  2) Stop"
+    echo -e "  🔄  3) Restart"
+    echo -e "  📋  4) Show Process Status"
+    echo -e "  ❌  5) Cancel\n"
     read -n1 -p "👉 Select an option [1-5]: " opt
+    echo ""
     case "$opt" in
         1) start_adguardhome ;;
         2) stop_adguardhome ;;
@@ -415,12 +416,12 @@ manage_service() {
 }
 
 change_release_train() {
-    echo ""
-    echo "🔁 Switch Release Train:"
-    echo "  🟢 1) Stable – Reliable and tested"
-    echo "  🧪 2) Beta   – New features, possibly unstable"
-    echo "  ❌ 3) Cancel"
+    echo -e "\n🔁 Switch Release Train:"
+    echo -e "  🟢 1) Stable – Reliable and tested"
+    echo -e "  🧪 2) Beta   – New features, possibly unstable"
+    echo -e "  ❌ 3) Cancel\n"
     read -n1 -p "👉 Select an option [1-3]: " opt
+    echo ""
     case "$opt" in
         1) TRAIN="stable" && echo "✅ Switched to Stable release train." ;;
         2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." ;;
@@ -431,11 +432,12 @@ change_release_train() {
 
 backup_adguardhome() {
     echo -e "\n🕰️  Backup Options:"
-    echo "  📦  1) Backup Both Binary and Config"
-    echo "  💾  2) Backup Binary Only"
-    echo "  🧾  3) Backup Config Only"
-    echo "  ❌  4) No Backup"
+    echo -e "  📦  1) Backup Both Binary and Config"
+    echo -e "  💾  2) Backup Binary Only"
+    echo -e "  🧾  3) Backup Config Only"
+    echo -e "  ❌  4) No Backup\n"
     read -n1 -p "👉 Choose an option [1-4]: " backup_choice
+    echo ""
     
     AGH_DIR=$(dirname "$AGH_BIN")
     AGH_BAK="$AGH_BIN.bak"
@@ -484,11 +486,12 @@ restore_adguardhome() {
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     echo -e "\n🕰️  Restore Options:"
-    echo "  📦  1) Restore Both Binary and Config"
-    echo "  💾  2) Restore Binary Only"
-    echo "  🧾  3) Restore Config Only"
-    echo "  ❌  4) Cancel"
+    echo -e "  📦  1) Restore Both Binary and Config"
+    echo -e "  💾  2) Restore Binary Only"
+    echo -e "  🧾  3) Restore Config Only"
+    echo -e "  ❌  4) Cancel\n"
     read -n1 -p "👉  Choose an option [1-4]: " restore_choice
+    echo ""
 
     case "$restore_choice" in
         1)                                                                                             
@@ -538,9 +541,10 @@ while true; do
     echo -e "  2) 🔁  Change Release Train"
     echo -e "  3) 🕰️   Restore Previous Version"
     echo -e "  4) 🔧  Manage AdGuardHome (Start/Stop/Restart)"
-    echo -e "  5) ❌  Exit"
-    read -n1 -p "\n👉  Enter choice: " choice
-
+    echo -e "  5) ❌  Exit\n"
+    read -n1 -p "👉  Enter choice: " choice
+    echo ""
+    
     case "$choice" in
         1)
             backup_adguardhome
