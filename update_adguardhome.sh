@@ -443,6 +443,7 @@ draw_screen() {
     if [ "$NEW_VER" = "$LATEST_VERSION" ]; then
         draw_screen 100
  	echo -e "✅ Update complete!"
+  	get_current_version
     else
         echo -e "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
 	cd /tmp && rm -rf "$TMP_DIR"
