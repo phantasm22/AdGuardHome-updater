@@ -108,16 +108,18 @@ find_running_binary() {
         exe=$(readlink -f "/proc/$pid/exe" | awk '{print $1}')
         if [ -x "$exe" ]; then
             AGH_BIN="$exe"
-            return
+            return 0
         fi
     else
 	exe=$(which AdGuardHome)
         if [ -x "$exe" ]; then                                                                            
             AGH_BIN="$exe"                                                                                
-            return                                                                                        
+            return 0                                                                                        
         fi
     fi
     echo -e "${RED}❌ AdGuardHome binary not found.${NOCOLOR}"
+    sleep 2
+    return 1
 }
 
 get_current_version() {
@@ -125,6 +127,7 @@ get_current_version() {
         VERSION="$($AGH_BIN --version | awk '{print $4}')"
     else
         VERSION="v0.000.00"
+	return 1
     fi
 }
 
@@ -132,7 +135,7 @@ get_release_train() {
     case "$VERSION" in
         v0.107.*) TRAIN="stable" ;;
         v0.108.*) TRAIN="beta" ;;
-        *) TRAIN="unknown" ;;
+        *) TRAIN="unknown"; return 1 ;;
     esac
 }
 
@@ -144,6 +147,8 @@ get_latest_version() {
     	| head -n 1)
     if [ -z "$LATEST_VERSION" ]; then
         echo -e "${RED}❌ Failed to fetch latest version from GitHub.${NOCOLOR}"
+	sleep 2
+	return 1
     fi
 }
 
@@ -176,12 +181,46 @@ find_startup_script() {
         grep -q 'AdGuardHome' "$file" && STARTUP_SCRIPT="$file" && return 0
     done
     echo -e ""
-    echo -e "❌ No valid AdGuardHome startup script found." >&2
+    echo -e "❌ No valid AdGuardHome startup script found."
+    sleep 2
+    return 1
+}
+
+get_config_file() {
+    # First try to get config file from running process
+    CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.ya?ml' | awk '{print $2}')
+    if [ -n "$CONFIG_FILE" ]; then
+        return 0
+    fi
+
+    # Fallback: try to locate from startup script
+    find_startup_script
+    if [ -n "$STARTUP_SCRIPT" ] && [ -f "$STARTUP_SCRIPT" ]; then
+        CONFIG_FILE=$(grep -oE '\-c[ =][^ ]+\.ya?ml' "$STARTUP_SCRIPT" | head -n 1 | sed -E 's/-c[ =]//')
+        if [ -n "$CONFIG_FILE" ]; then
+            return 0
+        fi
+    fi
+
+    # Tertiary: Broad file system search if startup script exists but no -c flag found
+    if [ -n "$STARTUP_SCRIPT" ] && [ -f "$STARTUP_SCRIPT" ]; then
+        CONFIG_FILE=$(find /etc /opt -type f -iname '*adguardhome*yaml' 2>/dev/null | head -n 1)
+	if [ -z "$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$(find / -type f -iname '*adguardhome*yaml' 2>/dev/null | head -n 1)
+	fi
+        if [ -n "$CONFIG_FILE" ]; then
+            return 0
+        fi
+    fi
+    
+    echo -e "${RED}❌  No valid AdGuardHome config file found.${NOCOLOR}"
+    CONFIG_FILE=""
+    sleep 2
     return 1
 }
 
 stop_adguardhome() {
-    find_startup_script
+    find_startup_script || return 1
     local before_pid after_pid i
 
     before_pid=$(pidof AdGuardHome)
@@ -219,7 +258,8 @@ stop_adguardhome() {
     echo ""
 
     if [ -n "$after_pid" ]; then
-        echo -e "${RED}❌ Failed to stop AdGuardHome (PID $after_pid still running).${NOCOLOR}" >&2
+        echo -e "${RED}❌ Failed to stop AdGuardHome (PID $after_pid still running).${NOCOLOR}"
+	sleep 2
         return 1
     fi
 
@@ -229,7 +269,7 @@ stop_adguardhome() {
 }
 
 start_adguardhome() {
-    find_startup_script
+    find_startup_script || return 1
     echo -e ""
 
     pid=$(pidof AdGuardHome)
@@ -261,13 +301,13 @@ start_adguardhome() {
         i=$((i-1))
     done
     echo ""
-    echo -e "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}" >&2
+    echo -e "${RED}❌ Failed to start AdGuardHome.${NOCOLOR}"
     sleep 2
     return 1
 }
 
 restart_adguardhome() {
-    find_startup_script
+    find_startup_script || return 1
     local before_pid after_pid i
 
     before_pid=$(pidof AdGuardHome)
@@ -300,7 +340,7 @@ restart_adguardhome() {
 	i=$((i-1))
     done
     echo ""
-    echo -e "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}" >&2
+    echo -e "${RED}❌ Failed to restart AdGuardHome.${NOCOLOR}"
     sleep 2
     return 1
 }
@@ -364,6 +404,7 @@ draw_screen() {
         add_msg "${RED}❌ Failed to download from $URL${NOCOLOR}"
         draw_screen 10
         cd /tmp && rm -rf "$TMP_DIR"
+	sleep 2
         return 1
     fi
 
@@ -373,6 +414,7 @@ draw_screen() {
         echo -e "${RED}❌ Extraction failed.${NOCOLOR}"
         draw_screen 25
         cd /tmp && rm -rf "$TMP_DIR"
+	sleep 2
         return 1
     fi
 
@@ -389,6 +431,7 @@ draw_screen() {
         echo -e "${RED}❌ Extracted binary not found.${NOCOLOR}"
         draw_screen 73
         cd /tmp && rm -rf "$TMP_DIR"
+	sleep 2
         return 1
     fi
 
@@ -402,6 +445,9 @@ draw_screen() {
  	echo -e "✅ Update complete!"
     else
         echo -e "${RED}❌ Update failed: still running $NEW_VER${NOCOLOR}"
+	cd /tmp && rm -rf "$TMP_DIR"
+	sleep 2
+ 	return 1
     fi
 
     cd /tmp && rm -rf "$TMP_DIR"
@@ -424,7 +470,7 @@ manage_service() {
         2) stop_adguardhome ;;
         3) restart_adguardhome ;;
         4) show_process_status ;;
-        *) return ;;
+        *) return 0 ;;
     esac
 }
 
@@ -442,7 +488,7 @@ change_release_train() {
         2) TRAIN="beta"   && echo "⚠️  Switched to Beta release train." && sleep 1 ;;
         *) return ;;
     esac
-    get_latest_version
+    get_latest_version || return 1
 }
 
 backup_adguardhome() {
@@ -460,12 +506,7 @@ backup_adguardhome() {
     AGH_DIR=$(dirname "$AGH_BIN")
     AGH_BAK="$AGH_BIN.bak"
 
-    CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
-    if [ -z "$CONFIG_FILE" ]; then
-        echo -e "${RED}❌ Unable to determine AdGuardHome config file location. AdGuardHome running?${NOCOLOR}"
-        return 1
-    fi
-
+    get_config_file || return 1
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     case "$backup_choice" in
@@ -496,13 +537,7 @@ backup_adguardhome() {
 restore_adguardhome() {
     AGH_DIR=$(dirname "$AGH_BIN")
     AGH_BAK="$AGH_BIN.bak"
-
-    CONFIG_FILE=$(ps | grep '[A]dGuardHome' | grep -oE '\-c [^ ]+\.yaml' | awk '{print $2}')
-    if [ -z "$CONFIG_FILE" ]; then
-        echo -e "${RED}❌ Unable to determine AdGuardHome config file location. AdGuardHome running?${NOCOLOR}"
-        return 1
-    fi
-
+    get_config_file || return 1
     CONFIG_BAK="${CONFIG_FILE}.bak"
 
     echo -e "\n\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
