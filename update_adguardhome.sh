@@ -204,9 +204,9 @@ get_config_file() {
 
     # Tertiary: Broad file system search if startup script exists but no -c flag found
     if [ -n "$STARTUP_SCRIPT" ] && [ -f "$STARTUP_SCRIPT" ]; then
-        CONFIG_FILE=$(find /etc /opt -type f -iname '*adguardhome*yaml' 2>/dev/null | head -n 1)
+        CONFIG_FILE=$(find /etc /opt -type f -iname '*.yaml' 2>/dev/null | grep -i 'adguardhome' | head -n 1)
 	if [ -z "$CONFIG_FILE" ]; then
-	    CONFIG_FILE=$(find / -type f -iname '*adguardhome*yaml' 2>/dev/null | head -n 1)
+	    CONFIG_FILE=$(find / -type f -iname '*.yaml' 2>/dev/null | grep -i 'adguardhome' | head -n 1)
 	fi
         if [ -n "$CONFIG_FILE" ]; then
             return 0
