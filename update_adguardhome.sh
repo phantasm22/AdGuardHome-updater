@@ -227,7 +227,7 @@ stop_adguardhome() {
     echo -e ""
     if [ -z "$before_pid" ]; then
         echo -e "${YELLOW}⚠️  AdGuardHome is not running.${NOCOLOR}"
-        return 0
+        return 1
     fi
 
     echo -e "${BLUE}🛑 Attempting to stop AdGuardHome (PID $before_pid)...${NOCOLOR}"
@@ -467,7 +467,7 @@ manage_service() {
     echo ""
     case "$opt" in
         1) start_adguardhome ;;
-        2) stop_adguardhome ;;
+        2) stop_adguardhome || sleep 2 ;;
         3) restart_adguardhome ;;
         4) show_process_status ;;
         *) return 0 ;;
