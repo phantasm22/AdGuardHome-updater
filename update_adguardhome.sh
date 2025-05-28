@@ -132,11 +132,20 @@ get_current_version() {
 }
 
 get_release_train() {
-    case "$VERSION" in
-        v0.107.*) TRAIN="stable" ;;
-        v0.108.*) TRAIN="beta" ;;
-        *) TRAIN="unknown"; return 1 ;;
-    esac
+    while :; do
+        case "$VERSION" in
+            v0.107.*) TRAIN="stable"; return 0 ;;
+            v0.108.*) TRAIN="beta"; return 0 ;;
+            *)
+                if get_current_version; then
+                    continue  # Retry the case block with updated $VERSION
+                else
+                    TRAIN="unknown"
+                    return 1
+                fi
+                ;;
+        esac
+    done
 }
 
 get_latest_version() {
