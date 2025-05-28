@@ -535,7 +535,7 @@ backup_adguardhome() {
             echo -e "${GREEN}✅ Config backed up.${NOCOLOR}"
             ;;
         4)
-            echo "❌🛈 No backup selected."
+            echo "❌  No backup selected."
             ;;
 	*) 
  	    echo "🛑 Cancelled."
