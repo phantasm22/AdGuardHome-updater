@@ -158,6 +158,7 @@ build_download_url() {
 
 show_info() {
     show_splash_screen
+    get_current_version
     echo -e "Current Version: ${GREEN}${VERSION}${NOCOLOR}"
     echo -e "Release Train:  ${YELLOW}${TRAIN}${NOCOLOR}"
     echo -e "Latest Version: ${BLUE}${LATEST_VERSION}${NOCOLOR}"
@@ -585,7 +586,6 @@ restore_adguardhome() {
 #==================== MAIN ====================
 find_running_binary
 detect_arch
-get_current_version
 get_release_train
 get_latest_version
 show_info
