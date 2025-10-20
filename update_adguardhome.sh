@@ -124,28 +124,37 @@ find_running_binary() {
 
 get_current_version() {
     if [ -x "$AGH_BIN" ]; then
-        VERSION="$($AGH_BIN --version | awk '{print $4}')"
+        VERSION="$($AGH_BIN --version 2>/dev/null | awk '{print $NF}')"
+        # Add 'v' prefix if missing
+        case "$VERSION" in
+            v*) ;;  # already has v
+            *) VERSION="v$VERSION" ;;
+        esac
+        [ -n "$VERSION" ] && return 0 || { VERSION="v0.000.00"; return 1; }
     else
         VERSION="v0.000.00"
-	return 1
+        return 1
     fi
 }
 
-get_release_train() {
-    while :; do
-        case "$VERSION" in
-            v0.107.*) TRAIN="stable"; return 0 ;;
-            v0.108.*) TRAIN="beta"; return 0 ;;
-            *)
-                if get_current_version; then
-                    continue  # Retry the case block with updated $VERSION
-                else
-                    TRAIN="unknown"
-                    return 1
-                fi
-                ;;
-        esac
-    done
+get_release_train() {                                                      
+    case "$VERSION" in                                                     
+        v0.107.*) TRAIN="stable"; return 0 ;;                              
+        v0.108.*) TRAIN="beta"; return 0 ;;                                
+        *)                                                                 
+            if get_current_version; then                                   
+                # Try one more time after refreshing $VERSION              
+                case "$VERSION" in                                         
+                    v0.107.*) TRAIN="stable"; return 0 ;;                  
+                    v0.108.*) TRAIN="beta"; return 0 ;;                        
+                    *) TRAIN="unknown"; return 1 ;;                            
+                esac                                                        
+            else                                             
+                TRAIN="unknown"                              
+                return 1                                                  
+            fi                                                           
+            ;;                                                         
+    esac                                                     
 }
 
 get_latest_version() {
